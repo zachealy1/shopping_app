@@ -1,19 +1,30 @@
+// lib/screens/list_screen.dart
+
 import 'package:flutter/material.dart';
 
 class ListScreen extends StatefulWidget {
-  const ListScreen({super.key});
+  final List<String> shoppingLists;
+
+  const ListScreen({super.key, required this.shoppingLists});
 
   @override
   State<ListScreen> createState() => _ListScreenState();
 }
 
 class _ListScreenState extends State<ListScreen> {
-  final List<String> _shoppingLists = [
-    'Aldi Shopping List',
-    'Lidl Shopping List',
-    'Sainsbury’s Shopping List',
-    'Tesco Shopping List',
-  ];
+  late List<String> _shoppingLists;
+
+  @override
+  void initState() {
+    super.initState();
+    _shoppingLists = widget.shoppingLists;
+  }
+
+  void addList(String listName) {
+    setState(() {
+      _shoppingLists.add(listName);
+    });
+  }
 
   void _deleteList(int index) {
     setState(() {
@@ -51,7 +62,7 @@ class _ListScreenState extends State<ListScreen> {
               padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
               child: Row(
                 children: [
-                  const Icon(Icons.list, color: Colors.black, size: 24), // List icon
+                  const Icon(Icons.list, color: Colors.black, size: 24),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -63,7 +74,7 @@ class _ListScreenState extends State<ListScreen> {
                       ),
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_ios, color: Colors.black54, size: 18), // Forward arrow
+                  const Icon(Icons.arrow_forward_ios, color: Colors.black54, size: 18),
                 ],
               ),
             ),

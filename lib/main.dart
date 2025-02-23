@@ -35,11 +35,28 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   int _selectedIndex = 0;
 
-  static const List<Map<String, dynamic>> _screens = [
-    {'title': 'Map', 'widget': MapScreen(), 'showAddButton': false},
-    {'title': 'Stores', 'widget': StoresScreen(), 'showAddButton': false},
-    {'title': 'List', 'widget': ListScreen(), 'showAddButton': true}, // Show add button on List screen
+  final List<String> _shoppingLists = [
+    'Aldi Shopping List',
+    'Lidl Shopping List',
+    'Sainsbury’s Shopping List',
+    'Tesco Shopping List',
   ];
+
+  late List<Map<String, dynamic>> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      {'title': 'Map', 'widget': const MapScreen(), 'showAddButton': false},
+      {'title': 'Stores', 'widget': const StoresScreen(), 'showAddButton': false},
+      {
+        'title': 'List',
+        'widget': ListScreen(shoppingLists: _shoppingLists),
+        'showAddButton': true
+      },
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -48,8 +65,41 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onAddButtonPressed() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Add button pressed')),
+    TextEditingController listController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add New List'),
+          content: TextField(
+            controller: listController,
+            decoration: const InputDecoration(hintText: 'Enter list name'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (listController.text.isNotEmpty) {
+                  setState(() {
+                    _shoppingLists.add(listController.text);
+                    _screens[2]['widget'] = ListScreen(shoppingLists: _shoppingLists);
+                  });
+                  Navigator.of(context).pop();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6A4CAF),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
     );
   }
 
