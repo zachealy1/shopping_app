@@ -1,6 +1,5 @@
-// lib/screens/list_screen.dart
-
 import 'package:flutter/material.dart';
+import 'list_details_screen.dart';
 
 class ListScreen extends StatefulWidget {
   final List<String> shoppingLists;
@@ -33,8 +32,11 @@ class _ListScreenState extends State<ListScreen> {
   }
 
   void _onListTap(String listName) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Tapped on $listName')),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ListDetailsScreen(listName: listName),
+      ),
     );
   }
 

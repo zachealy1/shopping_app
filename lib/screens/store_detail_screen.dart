@@ -24,6 +24,7 @@ class StoreDetailScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFFDF7FE),
       appBar: AppBar(
         backgroundColor: const Color(0xFFFDF7FE),
+        scrolledUnderElevation: 0.0,
         iconTheme: const IconThemeData(color: Colors.black),
         elevation: 0,
         centerTitle: true,
