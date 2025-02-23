@@ -6,16 +6,16 @@ class MapScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InteractiveViewer(
-      boundaryMargin: EdgeInsets.zero, // No white space outside the container
-      minScale: 1.0, // Minimum zoom scale (no zoom out smaller than full screen)
-      maxScale: 5.0, // Maximum zoom scale
-      panEnabled: true, // Enable panning
-      scaleEnabled: true, // Enable zooming
-      constrained: false, // Allow the content to exceed the screen bounds
+      boundaryMargin: EdgeInsets.zero,
+      minScale: 1.0,
+      maxScale: 5.0,
+      panEnabled: true,
+      scaleEnabled: true,
+      constrained: false,
       child: Container(
-        width: MediaQuery.of(context).size.width * 2, // Allow horizontal scrolling
-        height: MediaQuery.of(context).size.height * 2, // Allow vertical scrolling
-        color: const Color(0xFFFDF7FE), // Background color matches the header
+        width: MediaQuery.of(context).size.width * 2,
+        height: MediaQuery.of(context).size.height * 2,
+        color: const Color(0xFFFDF7FE),
         child: Stack(
           children: [
             // Meat Sections

@@ -34,10 +34,10 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   int _selectedIndex = 0;
 
-  static const List<Widget> _widgetOptions = <Widget>[
-    MapScreen(),
-    StoresScreen(),
-    Text('List Page', style: TextStyle(fontSize: 24)),
+  static const List<Map<String, dynamic>> _screens = [
+    {'title': 'Map', 'widget': MapScreen()},
+    {'title': 'Stores', 'widget': StoresScreen()},
+    {'title': 'List', 'widget': Text('List Page', style: TextStyle(fontSize: 24))},
   ];
 
   void _onItemTapped(int index) {
@@ -49,11 +49,24 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(centerTitle: true, title: const Text('Map')),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFDF7FE),
+        iconTheme: const IconThemeData(color: Colors.black),
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          _screens[_selectedIndex]['title'],
+          style: const TextStyle(
+            color: Color(0xFF1D2520),
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
       body: Column(
         children: [
           SearchBarWidget(controller: _searchController),
-          Expanded(child: _widgetOptions.elementAt(_selectedIndex)),
+          Expanded(child: _screens[_selectedIndex]['widget']),
         ],
       ),
       bottomNavigationBar: BottomNavBar(
