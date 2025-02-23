@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'store_detail_screen.dart'; // Import StoreDetailScreen
+import 'store_detail_screen.dart';
+import '../widgets/search_bar.dart';
 
 class StoresScreen extends StatefulWidget {
   const StoresScreen({super.key});
@@ -9,7 +10,6 @@ class StoresScreen extends StatefulWidget {
 }
 
 class _StoresScreenState extends State<StoresScreen> {
-  final TextEditingController _searchController = TextEditingController();
   final List<Map<String, String>> _stores = [
     {
       'name': 'Aldi Swansea',
@@ -46,6 +46,7 @@ class _StoresScreenState extends State<StoresScreen> {
   ];
 
   List<Map<String, String>> _filteredStores = [];
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -56,8 +57,8 @@ class _StoresScreenState extends State<StoresScreen> {
 
   void _onSearchChanged() {
     setState(() {
+      final query = _searchController.text.toLowerCase();
       _filteredStores = _stores.where((store) {
-        final query = _searchController.text.toLowerCase();
         return store['name']!.toLowerCase().contains(query) ||
             store['address']!.toLowerCase().contains(query);
       }).toList();
@@ -81,18 +82,27 @@ class _StoresScreenState extends State<StoresScreen> {
   }
 
   @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-
-        // Store List
+        SearchBarWidget(
+          controller: _searchController,
+          onSearchChanged: _onSearchChanged,
+        ),
         Expanded(
           child: ListView.builder(
             itemCount: _filteredStores.length,
             itemBuilder: (context, index) {
               final store = _filteredStores[index];
               return GestureDetector(
-                onTap: () => _onStoreTap(store), // Navigate to StoreDetailScreen
+                onTap: () => _onStoreTap(store),
                 child: _buildStoreItem(
                   name: store['name']!,
                   distance: store['distance']!,
@@ -114,7 +124,6 @@ class _StoresScreenState extends State<StoresScreen> {
       ),
       child: Row(
         children: [
-          // Icon
           Container(
             width: 50,
             height: 50,
@@ -124,10 +133,7 @@ class _StoresScreenState extends State<StoresScreen> {
             ),
             child: const Icon(Icons.place, color: Color(0xFF1D2520), size: 24),
           ),
-
           const SizedBox(width: 12),
-
-          // Store Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,10 +156,7 @@ class _StoresScreenState extends State<StoresScreen> {
               ],
             ),
           ),
-
           const SizedBox(width: 8),
-
-          // Arrow Icon
           const Icon(Icons.arrow_forward_ios, color: Colors.black54, size: 20),
         ],
       ),

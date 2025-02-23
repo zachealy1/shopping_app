@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'screens/map_screen.dart';
 import 'screens/stores_screen.dart';
 import 'screens/list_screen.dart';
-import 'widgets/search_bar.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'widgets/header_widget.dart';
 import 'theme/app_theme.dart';
@@ -32,7 +31,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final TextEditingController _searchController = TextEditingController();
   int _selectedIndex = 0;
 
   final List<String> _shoppingLists = [
@@ -48,12 +46,20 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _screens = [
-      {'title': 'Map', 'widget': const MapScreen(), 'showAddButton': false},
-      {'title': 'Stores', 'widget': const StoresScreen(), 'showAddButton': false},
+      {
+        'title': 'Map',
+        'widget': const MapScreen(),
+        'showAddButton': false,
+      },
+      {
+        'title': 'Stores',
+        'widget': const StoresScreen(),
+        'showAddButton': false,
+      },
       {
         'title': 'List',
         'widget': ListScreen(shoppingLists: _shoppingLists),
-        'showAddButton': true
+        'showAddButton': true,
       },
     ];
   }
@@ -111,12 +117,7 @@ class _HomePageState extends State<HomePage> {
         showAddButton: _screens[_selectedIndex]['showAddButton'],
         onAddPressed: _screens[_selectedIndex]['showAddButton'] ? _onAddButtonPressed : null,
       ),
-      body: Column(
-        children: [
-          SearchBarWidget(controller: _searchController),
-          Expanded(child: _screens[_selectedIndex]['widget']),
-        ],
-      ),
+      body: _screens[_selectedIndex]['widget'],
       bottomNavigationBar: BottomNavBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

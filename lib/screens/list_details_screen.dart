@@ -15,25 +15,25 @@ class ListDetailsScreen extends StatefulWidget {
 class _ListDetailsScreenState extends State<ListDetailsScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _items = [];
+  List<Map<String, dynamic>> _filteredItems = [];
 
   @override
   void initState() {
     super.initState();
-    _loadItems(); // Load items when screen initializes
+    _loadItems();
   }
 
-  // Load items from SharedPreferences
   Future<void> _loadItems() async {
     final prefs = await SharedPreferences.getInstance();
     final String? savedItems = prefs.getString(widget.listName);
     if (savedItems != null) {
       setState(() {
         _items = List<Map<String, dynamic>>.from(jsonDecode(savedItems));
+        _filteredItems = _items;
       });
     }
   }
 
-  // Save items to SharedPreferences
   Future<void> _saveItems() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(widget.listName, jsonEncode(_items));
@@ -42,13 +42,18 @@ class _ListDetailsScreenState extends State<ListDetailsScreen> {
   void _deleteItem(int index) {
     setState(() {
       _items.removeAt(index);
+      _filteredItems = _items;
     });
     _saveItems();
   }
 
   void _toggleItem(int index) {
     setState(() {
-      _items[index]['checked'] = !_items[index]['checked'];
+      _filteredItems[index]['checked'] = !_filteredItems[index]['checked'];
+      int originalIndex = _items.indexWhere((item) => item['name'] == _filteredItems[index]['name']);
+      if (originalIndex != -1) {
+        _items[originalIndex]['checked'] = _filteredItems[index]['checked'];
+      }
     });
     _saveItems();
   }
@@ -74,9 +79,11 @@ class _ListDetailsScreenState extends State<ListDetailsScreen> {
               onPressed: () {
                 if (itemController.text.isNotEmpty) {
                   setState(() {
-                    _items.add({'name': itemController.text, 'checked': false});
+                    final newItem = {'name': itemController.text, 'checked': false};
+                    _items.add(newItem);
+                    _filteredItems = _items;
                   });
-                  _saveItems(); // Save items after adding
+                  _saveItems();
                   Navigator.of(context).pop();
                 }
               },
@@ -90,6 +97,15 @@ class _ListDetailsScreenState extends State<ListDetailsScreen> {
         );
       },
     );
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      final query = _searchController.text.toLowerCase();
+      _filteredItems = _items.where((item) {
+        return item['name'].toLowerCase().contains(query);
+      }).toList();
+    });
   }
 
   @override
@@ -125,13 +141,13 @@ class _ListDetailsScreenState extends State<ListDetailsScreen> {
       ),
       body: Column(
         children: [
-          SearchBarWidget(controller: _searchController),
+          SearchBarWidget(controller: _searchController, onSearchChanged: _onSearchChanged), // Updated widget call
           Expanded(
             child: ListView.builder(
-              itemCount: _items.length,
+              itemCount: _filteredItems.length,
               itemBuilder: (context, index) {
                 return Dismissible(
-                  key: Key(_items[index]['name']),
+                  key: Key(_filteredItems[index]['name']),
                   direction: DismissDirection.endToStart,
                   background: Container(
                     alignment: Alignment.centerRight,
@@ -141,20 +157,25 @@ class _ListDetailsScreenState extends State<ListDetailsScreen> {
                       child: Icon(Icons.delete, color: Colors.black, size: 28),
                     ),
                   ),
-                  onDismissed: (direction) => _deleteItem(index),
+                  onDismissed: (direction) {
+                    int originalIndex = _items.indexWhere((item) => item['name'] == _filteredItems[index]['name']);
+                    if (originalIndex != -1) {
+                      _deleteItem(originalIndex);
+                    }
+                  },
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     title: Text(
-                      _items[index]['name'],
+                      _filteredItems[index]['name'],
                       style: TextStyle(
-                        color: _items[index]['checked'] ? Colors.black54 : Colors.black,
-                        decoration: _items[index]['checked'] ? TextDecoration.lineThrough : TextDecoration.none,
+                        color: _filteredItems[index]['checked'] ? Colors.black54 : Colors.black,
+                        decoration: _filteredItems[index]['checked'] ? TextDecoration.lineThrough : TextDecoration.none,
                       ),
                     ),
                     trailing: GestureDetector(
                       onTap: () => _toggleItem(index),
                       child: Icon(
-                        _items[index]['checked'] ? Icons.check_box : Icons.check_box_outline_blank,
+                        _filteredItems[index]['checked'] ? Icons.check_box : Icons.check_box_outline_blank,
                         color: const Color(0xFF6A4CAF),
                       ),
                     ),
