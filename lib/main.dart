@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/map_screen.dart';
+import 'screens/stores_screen.dart';
+import 'screens/list_screen.dart';
 import 'widgets/search_bar.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'theme/app_theme.dart';
