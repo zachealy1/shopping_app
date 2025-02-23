@@ -36,7 +36,7 @@ class _HomePageState extends State<HomePage> {
 
   static const List<Widget> _widgetOptions = <Widget>[
     MapScreen(),
-    Text('Stores Page', style: TextStyle(fontSize: 24)),
+    StoresScreen(),
     Text('List Page', style: TextStyle(fontSize: 24)),
   ];
 
