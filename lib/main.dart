@@ -4,6 +4,7 @@ import 'screens/stores_screen.dart';
 import 'screens/list_screen.dart';
 import 'widgets/search_bar.dart';
 import 'widgets/bottom_nav_bar.dart';
+import 'widgets/header_widget.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -35,9 +36,9 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
   static const List<Map<String, dynamic>> _screens = [
-    {'title': 'Map', 'widget': MapScreen()},
-    {'title': 'Stores', 'widget': StoresScreen()},
-    {'title': 'List', 'widget': Text('List Page', style: TextStyle(fontSize: 24))},
+    {'title': 'Map', 'widget': MapScreen(), 'showAddButton': false},
+    {'title': 'Stores', 'widget': StoresScreen(), 'showAddButton': false},
+    {'title': 'List', 'widget': ListScreen(), 'showAddButton': true}, // Show add button on List screen
   ];
 
   void _onItemTapped(int index) {
@@ -46,22 +47,19 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _onAddButtonPressed() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Add button pressed')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF7FE),
-        iconTheme: const IconThemeData(color: Colors.black),
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          _screens[_selectedIndex]['title'],
-          style: const TextStyle(
-            color: Color(0xFF1D2520),
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      appBar: HeaderWidget(
+        title: _screens[_selectedIndex]['title'],
+        showAddButton: _screens[_selectedIndex]['showAddButton'],
+        onAddPressed: _screens[_selectedIndex]['showAddButton'] ? _onAddButtonPressed : null,
       ),
       body: Column(
         children: [
