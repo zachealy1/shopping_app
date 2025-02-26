@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
+import 'package:geolocator/geolocator.dart';
 import 'store_detail_screen.dart';
 import '../widgets/search_bar.dart';
 
@@ -12,46 +14,53 @@ class StoresScreen extends StatefulWidget {
 }
 
 class _StoresScreenState extends State<StoresScreen> {
+  double _userLat = 0;
+  double _userLon = 0;
+
   final List<Map<String, String>> _stores = [
     {
       'name': 'Aldi Swansea',
-      'distance': '0.1 km',
       'address': 'Unit 1, Parc Tawe, Swansea SA1 2AS',
       'imageAsset': 'assets/images/aldi.jpg',
       'mapImageAsset': 'assets/images/aldi-map.png',
       'hours': 'Monday to Saturday: 8:00 AM – 8:00 PM; Sunday: 10:00 AM – 4:00 PM.',
       'description':
       'This store offers a range of groceries, fresh produce, and household essentials at low prices.',
+      'lat': '51.621139',
+      'lon': '-3.938108',
     },
     {
       'name': 'Tesco Extra',
-      'distance': '0.5 km',
       'address': 'Albert Row, Swansea SA1 3RA',
       'imageAsset': 'assets/images/tesco.jpg',
       'mapImageAsset': 'assets/images/tesco-map.png',
       'hours': 'Monday to Saturday: 6:00 AM – 10:00 PM; Sunday: 10:00 AM – 4:00 PM.',
       'description':
       'Tesco Extra offers groceries, clothing, electronics, and home goods. Facilities include a café and cash machines.',
+      'lat': '51.616753',
+      'lon': '-3.944417',
     },
     {
       'name': 'Lidl Swansea',
-      'distance': '1.0 km',
       'address': 'Trinity Place, Swansea SA1 2DQ',
       'imageAsset': 'assets/images/lidl.jpg',
       'mapImageAsset': 'assets/images/lidl-map.png',
       'hours': 'Monday to Saturday: 8:00 AM – 10:00 PM; Sunday: 10:00 AM – 4:00 PM.',
       'description':
       'Lidl Swansea provides fresh produce, bakery items, and quality household products at low prices.',
+      'lat': '51.624111',
+      'lon': '-3.939608',
     },
     {
       'name': 'Sainsbury\'s',
-      'distance': '1.5 km',
       'address': 'Quay Parade, Swansea SA1 8AJ',
       'imageAsset': 'assets/images/sainsburys.jpg',
       'mapImageAsset': 'assets/images/sainsburys-map.png',
       'hours': 'Monday to Saturday: 7:00 AM – 9:00 PM; Sunday: 10:00 AM – 4:00 PM.',
       'description':
       'Sainsbury\'s offers groceries, clothing, electronics, and home essentials. Services include a café, pharmacy, and photo booth.',
+      'lat': '51.620128',
+      'lon': '-3.935925',
     },
   ];
 
@@ -63,6 +72,72 @@ class _StoresScreenState extends State<StoresScreen> {
     super.initState();
     _filteredStores = _stores;
     _searchController.addListener(_onSearchChanged);
+    _getUserLocation();
+  }
+
+  Future<void> _getUserLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        print('Location services are disabled.');
+        setState(() {
+          _userLat = 51.616753;
+          _userLon = -3.944417;
+        });
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          print('Location permissions are denied.');
+          setState(() {
+            _userLat = 51.616753;
+            _userLon = -3.944417;
+          });
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        print('Location permissions are permanently denied.');
+        setState(() {
+          _userLat = 51.616753;
+          _userLon = -3.944417;
+        });
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      ).timeout(const Duration(seconds: 10), onTimeout: () {
+        print('Timeout reached while fetching location.');
+        return Position(
+          latitude: 51.616753,
+          longitude: -3.944417,
+          timestamp: DateTime.now(),
+          accuracy: 0,
+          altitude: 0,
+          altitudeAccuracy: 0,
+          heading: 0,
+          headingAccuracy: 0,
+          speed: 0,
+          speedAccuracy: 0,
+        );
+      });
+
+      setState(() {
+        _userLat = position.latitude;
+        _userLon = position.longitude;
+      });
+    } catch (e) {
+      print("Error getting location: $e");
+      setState(() {
+        _userLat = 51.616753;
+        _userLon = -3.944417;
+      });
+    }
   }
 
   void _onSearchChanged() {
@@ -75,15 +150,33 @@ class _StoresScreenState extends State<StoresScreen> {
     });
   }
 
+  double _deg2rad(double deg) => deg * (pi / 180);
+
+  double _calculateDistance(
+      double lat1, double lon1, double lat2, double lon2) {
+    const R = 6371;
+    final dLat = _deg2rad(lat2 - lat1);
+    final dLon = _deg2rad(lon2 - lon1);
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_deg2rad(lat1)) * cos(_deg2rad(lat2)) *
+            sin(dLon / 2) * sin(dLon / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return R * c;
+  }
+
   void _onStoreTap(Map<String, String> store) async {
-    final mapImageUrl =
-        store['mapImageAsset'];
+    final storeLat = double.tryParse(store['lat'] ?? '') ?? 0;
+    final storeLon = double.tryParse(store['lon'] ?? '') ?? 0;
+    final distanceKm = _calculateDistance(_userLat, _userLon, storeLat, storeLon);
+    final distanceStr = '${distanceKm.toStringAsFixed(2)} km';
+    final mapImageUrl = store['mapImageAsset'] ?? 'assets/images/default_map.png';
+
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => StoreDetailScreen(
           name: store['name'] ?? 'No Name Available',
-          distance: store['distance'] ?? 'N/A',
+          distance: distanceStr,
           address: store['address'] ?? 'No Address Available',
           imageUrl: store['imageAsset'] ?? 'assets/images/default_image.jpg',
           hours: store['hours'] ?? 'No Hours Available',
@@ -111,6 +204,21 @@ class _StoresScreenState extends State<StoresScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_userLat == 0 && _userLon == 0) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final sortedStores = List<Map<String, String>>.from(_filteredStores);
+    sortedStores.sort((a, b) {
+      final aLat = double.tryParse(a['lat'] ?? '') ?? 0;
+      final aLon = double.tryParse(a['lon'] ?? '') ?? 0;
+      final bLat = double.tryParse(b['lat'] ?? '') ?? 0;
+      final bLon = double.tryParse(b['lon'] ?? '') ?? 0;
+      final distanceA = _calculateDistance(_userLat, _userLon, aLat, aLon);
+      final distanceB = _calculateDistance(_userLat, _userLon, bLat, bLon);
+      return distanceA.compareTo(distanceB);
+    });
+
     return Column(
       children: [
         SearchBarWidget(
@@ -119,14 +227,18 @@ class _StoresScreenState extends State<StoresScreen> {
         ),
         Expanded(
           child: ListView.builder(
-            itemCount: _filteredStores.length,
+            itemCount: sortedStores.length,
             itemBuilder: (context, index) {
-              final store = _filteredStores[index];
+              final store = sortedStores[index];
+              final storeLat = double.tryParse(store['lat'] ?? '') ?? 0;
+              final storeLon = double.tryParse(store['lon'] ?? '') ?? 0;
+              final distanceKm =
+              _calculateDistance(_userLat, _userLon, storeLat, storeLon);
               return GestureDetector(
                 onTap: () => _onStoreTap(store),
                 child: _buildStoreItem(
                   name: store['name']!,
-                  distance: store['distance']!,
+                  distance: '${distanceKm.toStringAsFixed(2)} km',
                   address: store['address']!,
                 ),
               );
