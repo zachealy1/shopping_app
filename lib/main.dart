@@ -48,12 +48,26 @@ class _HomePageState extends State<HomePage> {
     _screens = [
       {
         'title': 'Map',
-        'widget': const MapScreen(),
+        'widget': MapScreen(mapImageUrl: 'assets/images/tesco-map.png'),
         'showAddButton': false,
       },
       {
         'title': 'Stores',
-        'widget': const StoresScreen(),
+        // Pass an onMapOpen callback to the StoresScreen so that when the store detail returns a result,
+        // the main page can update to the Map tab with the correct image.
+        'widget': StoresScreen(
+          onMapOpen: (result) {
+            setState(() {
+              // Assuming the result contains a 'selectedTab' index and a 'mapImageUrl'
+              _selectedIndex = result['selectedTab'] as int;
+              _screens[0] = {
+                'title': 'Map',
+                'widget': MapScreen(mapImageUrl: result['mapImageUrl'] as String),
+                'showAddButton': false,
+              };
+            });
+          },
+        ),
         'showAddButton': false,
       },
       {
@@ -92,7 +106,8 @@ class _HomePageState extends State<HomePage> {
                 if (listController.text.isNotEmpty) {
                   setState(() {
                     _shoppingLists.add(listController.text);
-                    _screens[2]['widget'] = ListScreen(shoppingLists: _shoppingLists);
+                    _screens[2]['widget'] =
+                        ListScreen(shoppingLists: _shoppingLists);
                   });
                   Navigator.of(context).pop();
                 }
@@ -115,7 +130,9 @@ class _HomePageState extends State<HomePage> {
       appBar: HeaderWidget(
         title: _screens[_selectedIndex]['title'],
         showAddButton: _screens[_selectedIndex]['showAddButton'],
-        onAddPressed: _screens[_selectedIndex]['showAddButton'] ? _onAddButtonPressed : null,
+        onAddPressed: _screens[_selectedIndex]['showAddButton']
+            ? _onAddButtonPressed
+            : null,
       ),
       body: _screens[_selectedIndex]['widget'],
       bottomNavigationBar: BottomNavBar(

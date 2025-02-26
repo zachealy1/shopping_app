@@ -7,6 +7,7 @@ class StoreDetailScreen extends StatelessWidget {
   final String imageUrl;
   final String hours;
   final String description;
+  final String? mapImageUrl;
 
   const StoreDetailScreen({
     super.key,
@@ -16,6 +17,7 @@ class StoreDetailScreen extends StatelessWidget {
     required this.imageUrl,
     required this.hours,
     required this.description,
+    this.mapImageUrl,
   });
 
   @override
@@ -82,16 +84,13 @@ class StoreDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             Image.asset(
               imageUrl,
               width: double.infinity,
               height: 200,
               fit: BoxFit.cover,
             ),
-
             const SizedBox(height: 16),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
@@ -126,13 +125,15 @@ class StoreDetailScreen extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 32),
-
             Center(
               child: ElevatedButton(
                 onPressed: () {
-
+                  // Return the selected tab and mapImageUrl to the caller.
+                  Navigator.of(context).pop({
+                    'selectedTab': 0,
+                    'mapImageUrl': mapImageUrl ?? imageUrl,
+                  });
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6A4CAF),
@@ -149,7 +150,6 @@ class StoreDetailScreen extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 32),
           ],
         ),

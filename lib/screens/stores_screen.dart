@@ -3,7 +3,9 @@ import 'store_detail_screen.dart';
 import '../widgets/search_bar.dart';
 
 class StoresScreen extends StatefulWidget {
-  const StoresScreen({super.key});
+  final ValueChanged<Map<String, dynamic>>? onMapOpen;
+
+  const StoresScreen({super.key, this.onMapOpen});
 
   @override
   State<StoresScreen> createState() => _StoresScreenState();
@@ -16,32 +18,40 @@ class _StoresScreenState extends State<StoresScreen> {
       'distance': '0.1 km',
       'address': 'Unit 1, Parc Tawe, Swansea SA1 2AS',
       'imageAsset': 'assets/images/aldi.jpg',
+      'mapImageAsset': 'assets/images/aldi-map.png',
       'hours': 'Monday to Saturday: 8:00 AM – 8:00 PM; Sunday: 10:00 AM – 4:00 PM.',
-      'description': 'This store offers a range of groceries, fresh produce, and household essentials at low prices.',
+      'description':
+      'This store offers a range of groceries, fresh produce, and household essentials at low prices.',
     },
     {
       'name': 'Tesco Extra',
       'distance': '0.5 km',
       'address': 'Albert Row, Swansea SA1 3RA',
       'imageAsset': 'assets/images/tesco.jpg',
+      'mapImageAsset': 'assets/images/tesco-map.png',
       'hours': 'Monday to Saturday: 6:00 AM – 10:00 PM; Sunday: 10:00 AM – 4:00 PM.',
-      'description': 'Tesco Extra offers groceries, clothing, electronics, and home goods. Facilities include a café and cash machines.',
+      'description':
+      'Tesco Extra offers groceries, clothing, electronics, and home goods. Facilities include a café and cash machines.',
     },
     {
       'name': 'Lidl Swansea',
       'distance': '1.0 km',
       'address': 'Trinity Place, Swansea SA1 2DQ',
       'imageAsset': 'assets/images/lidl.jpg',
+      'mapImageAsset': 'assets/images/lidl-map.png',
       'hours': 'Monday to Saturday: 8:00 AM – 10:00 PM; Sunday: 10:00 AM – 4:00 PM.',
-      'description': 'Lidl Swansea provides fresh produce, bakery items, and quality household products at low prices.',
+      'description':
+      'Lidl Swansea provides fresh produce, bakery items, and quality household products at low prices.',
     },
     {
       'name': 'Sainsbury\'s',
       'distance': '1.5 km',
       'address': 'Quay Parade, Swansea SA1 8AJ',
       'imageAsset': 'assets/images/sainsburys.jpg',
+      'mapImageAsset': 'assets/images/sainsburys-map.png',
       'hours': 'Monday to Saturday: 7:00 AM – 9:00 PM; Sunday: 10:00 AM – 4:00 PM.',
-      'description': 'Sainsbury\'s offers groceries, clothing, electronics, and home essentials. Services include a café, pharmacy, and photo booth.',
+      'description':
+      'Sainsbury\'s offers groceries, clothing, electronics, and home essentials. Services include a café, pharmacy, and photo booth.',
     },
   ];
 
@@ -65,8 +75,10 @@ class _StoresScreenState extends State<StoresScreen> {
     });
   }
 
-  void _onStoreTap(Map<String, String> store) {
-    Navigator.push(
+  void _onStoreTap(Map<String, String> store) async {
+    final mapImageUrl =
+        store['mapImageAsset'];
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => StoreDetailScreen(
@@ -76,9 +88,18 @@ class _StoresScreenState extends State<StoresScreen> {
           imageUrl: store['imageAsset'] ?? 'assets/images/default_image.jpg',
           hours: store['hours'] ?? 'No Hours Available',
           description: store['description'] ?? 'No Description Available',
+          mapImageUrl: mapImageUrl,
         ),
       ),
     );
+
+    if (result != null && result is Map) {
+      if (widget.onMapOpen != null) {
+        widget.onMapOpen!(result as Map<String, dynamic>);
+      } else {
+        Navigator.of(context).pop(result);
+      }
+    }
   }
 
   @override
@@ -116,7 +137,11 @@ class _StoresScreenState extends State<StoresScreen> {
     );
   }
 
-  Widget _buildStoreItem({required String name, required String distance, required String address}) {
+  Widget _buildStoreItem({
+    required String name,
+    required String distance,
+    required String address,
+  }) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: const BoxDecoration(
