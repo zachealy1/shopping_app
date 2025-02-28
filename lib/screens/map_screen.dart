@@ -66,6 +66,15 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // If no map image URL is provided, show a loading indicator.
+    if (widget.mapImageUrl.isEmpty) {
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     final bool isSearching = _searchController.text.isNotEmpty;
 
     return Scaffold(
