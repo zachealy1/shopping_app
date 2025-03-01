@@ -46,35 +46,36 @@ class _MapScreenState extends State<MapScreen> {
   List<String> _filteredShoppingItems = [];
   String? _selectedItem;
 
-  // Mapping of shopping items to coordinates on the map.
-  // Adjust these values to match your map image's coordinate system.
   final Map<String, Offset> _itemLocations = {
-    "Milk": const Offset(50, 50),
-    "Bread": const Offset(100, 80),
-    "Eggs": const Offset(150, 120),
-    "Cheese": const Offset(200, 140),
-    "Butter": const Offset(250, 180),
-    "Apples": const Offset(300, 220),
-    "Bananas": const Offset(350, 260),
-    "Chicken Breast": const Offset(400, 300),
-    "Ground Beef": const Offset(450, 340),
-    "Carrots": const Offset(500, 380),
-    "Broccoli": const Offset(550, 420),
-    "Lettuce": const Offset(600, 460),
-    "Tomatoes": const Offset(650, 500),
-    "Potatoes": const Offset(700, 540),
-    "Pasta": const Offset(750, 580),
-    "Rice": const Offset(800, 620),
-    "Cereal": const Offset(850, 660),
-    "Yogurt": const Offset(900, 700),
-    "Orange Juice": const Offset(950, 740),
-    "Coffee": const Offset(1000, 780),
-    "Tea": const Offset(1050, 820),
-    "Frozen Vegetables": const Offset(1100, 860),
-    "Snack Bars": const Offset(1150, 900),
-    "Chips": const Offset(1200, 940),
-    "Soda": const Offset(1250, 980),
+    "Milk": const Offset(250, -20),
+    "Bread": const Offset(130, 50),
+    "Eggs": const Offset(250, -20),
+    "Cheese": const Offset(175, -20),
+    "Butter": const Offset(250, -20),
+    "Apples": const Offset(300, 175),
+    "Bananas": const Offset(300, 175),
+    "Chicken Breast": const Offset(330, 10),
+    "Ground Beef": const Offset(330, 10),
+    "Carrots": const Offset(300, 175),
+    "Broccoli": const Offset(300, 175),
+    "Lettuce": const Offset(300, 175),
+    "Tomatoes": const Offset(300, 175),
+    "Potatoes": const Offset(300, 175),
+    "Pasta": const Offset(130, 50),
+    "Rice": const Offset(130, 50),
+    "Cereal": const Offset(228, 50),
+    "Yogurt": const Offset(250, -20),
+    "Orange Juice": const Offset(-10, 50),
+    "Coffee": const Offset(228, 50),
+    "Tea": const Offset(228, 50),
+    "Frozen Vegetables": const Offset(262, 150),
+    "Snack Bars": const Offset(175, -20),
+    "Chips": const Offset(262, 150),
+    "Soda": const Offset(-10, 50),
   };
+
+  // Define a constant for the search bar height.
+  static const double kSearchBarHeight = 60.0;
 
   @override
   void initState() {
@@ -110,15 +111,14 @@ class _MapScreenState extends State<MapScreen> {
     final bool isSearching = _searchController.text.isNotEmpty;
 
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          SearchBarWidget(
-            controller: _searchController,
-            onSearchChanged: _filterItems,
-          ),
-          Expanded(
+          // Main content (map or list) positioned below the search bar.
+          Positioned.fill(
+            top: kSearchBarHeight,
             child: isSearching
                 ? ListView.builder(
+              padding: EdgeInsets.zero,
               itemCount: _filteredShoppingItems.length,
               itemBuilder: (context, index) {
                 final item = _filteredShoppingItems[index];
@@ -136,8 +136,7 @@ class _MapScreenState extends State<MapScreen> {
                 : LayoutBuilder(
               builder: (context, constraints) {
                 return InteractiveViewer(
-                  // Remove any explicit alignment here; instead, wrap the child in a Container
-                  // that fills the available space and centers its child.
+                  clipBehavior: Clip.none, // Allow overflow for pointer.
                   boundaryMargin: EdgeInsets.zero,
                   minScale: 1.0,
                   maxScale: 5.0,
@@ -150,6 +149,7 @@ class _MapScreenState extends State<MapScreen> {
                     height: constraints.maxHeight,
                     alignment: Alignment.center,
                     child: Stack(
+                      clipBehavior: Clip.none, // Ensure pointer isn’t clipped.
                       children: [
                         Image.asset(
                           widget.mapImageUrl,
@@ -171,6 +171,16 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 );
               },
+            ),
+          ),
+          // The search bar stays at the top of the screen.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: SearchBarWidget(
+              controller: _searchController,
+              onSearchChanged: _filterItems,
             ),
           ),
         ],
