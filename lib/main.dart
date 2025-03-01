@@ -95,11 +95,10 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // Initially set MapScreen with an empty image URL to show a loading indicator.
     _screens = [
       {
         'title': 'Map',
-        'widget': const MapScreen(mapImageUrl: ''),
+        'widget': const MapScreen(mapImageUrl: '', supermarket: 'Aldi Swansea'),
         'showAddButton': false,
       },
       {
@@ -108,9 +107,14 @@ class _HomePageState extends State<HomePage> {
           onMapOpen: (result) {
             setState(() {
               _selectedIndex = result['selectedTab'] as int;
+              // Expecting result to include both the map image URL and the supermarket identifier.
               _screens[0] = {
                 'title': 'Map',
-                'widget': MapScreen(mapImageUrl: result['mapImageUrl'] as String),
+                'widget': MapScreen(
+                  key: const ValueKey('MapScreen'),
+                  mapImageUrl: result['mapImageUrl'] as String,
+                  supermarket: result['storeName'] as String,
+                ),
                 'showAddButton': false,
               };
             });
@@ -126,6 +130,15 @@ class _HomePageState extends State<HomePage> {
     ];
 
     _getUserLocationAndSetDefaultMap();
+  }
+
+  // Helper function to determine the supermarket from the store name.
+  String _getSupermarket(String storeName) {
+    if (storeName == '') {
+      return "Aldi Swansea";
+    } else {
+      return storeName;
+    }
   }
 
   Future<void> _getUserLocationAndSetDefaultMap() async {
@@ -173,15 +186,17 @@ class _HomePageState extends State<HomePage> {
       return distanceA.compareTo(distanceB);
     });
 
-    // Get the closest store's map image asset.
+    // Get the closest store's map image asset and determine its supermarket.
     String defaultMapImageUrl = sortedStores.isNotEmpty
         ? sortedStores.first['mapImageAsset'] ?? ''
         : '';
+    String storeName = sortedStores.isNotEmpty ? sortedStores.first['name']! : 'Aldi';
+    String supermarket = _getSupermarket(storeName);
 
     setState(() {
       _screens[0] = {
         'title': 'Map',
-        'widget': MapScreen(mapImageUrl: defaultMapImageUrl),
+        'widget': MapScreen(mapImageUrl: defaultMapImageUrl, supermarket: supermarket),
         'showAddButton': false,
       };
     });

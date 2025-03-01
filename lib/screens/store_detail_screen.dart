@@ -129,10 +129,11 @@ class StoreDetailScreen extends StatelessWidget {
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  // Return the selected tab and mapImageUrl to the caller.
+                  // Return the selected tab, map image URL, and store name to the caller.
                   Navigator.of(context).pop({
                     'selectedTab': 0,
                     'mapImageUrl': mapImageUrl ?? imageUrl,
+                    'storeName': name,
                   });
                 },
                 style: ElevatedButton.styleFrom(

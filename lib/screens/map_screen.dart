@@ -3,8 +3,13 @@ import '../widgets/search_bar.dart';
 
 class MapScreen extends StatefulWidget {
   final String mapImageUrl;
+  final String supermarket;
 
-  const MapScreen({super.key, required this.mapImageUrl});
+  const MapScreen({
+    super.key,
+    required this.mapImageUrl,
+    required this.supermarket,
+  });
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -15,73 +20,133 @@ class _MapScreenState extends State<MapScreen> {
   final TransformationController _transformationController =
   TransformationController();
 
-  final List<String> _shoppingItems = [
-    "Milk",
-    "Bread",
-    "Eggs",
-    "Cheese",
-    "Butter",
-    "Apples",
-    "Bananas",
-    "Chicken Breast",
-    "Ground Beef",
-    "Carrots",
-    "Broccoli",
-    "Lettuce",
-    "Tomatoes",
-    "Potatoes",
-    "Pasta",
-    "Rice",
-    "Cereal",
-    "Yogurt",
-    "Orange Juice",
-    "Coffee",
-    "Tea",
-    "Frozen Vegetables",
-    "Snack Bars",
-    "Chips",
-    "Soda"
-  ];
-
-  List<String> _filteredShoppingItems = [];
-  String? _selectedItem;
-
-  final Map<String, Offset> _itemLocations = {
-    "Milk": const Offset(250, -20),
-    "Bread": const Offset(130, 50),
-    "Eggs": const Offset(250, -20),
-    "Cheese": const Offset(175, -20),
-    "Butter": const Offset(250, -20),
-    "Apples": const Offset(300, 175),
-    "Bananas": const Offset(300, 175),
-    "Chicken Breast": const Offset(330, 10),
-    "Ground Beef": const Offset(330, 10),
-    "Carrots": const Offset(300, 175),
-    "Broccoli": const Offset(300, 175),
-    "Lettuce": const Offset(300, 175),
-    "Tomatoes": const Offset(300, 175),
-    "Potatoes": const Offset(300, 175),
-    "Pasta": const Offset(130, 50),
-    "Rice": const Offset(130, 50),
-    "Cereal": const Offset(228, 50),
-    "Yogurt": const Offset(250, -20),
-    "Orange Juice": const Offset(-10, 50),
-    "Coffee": const Offset(228, 50),
-    "Tea": const Offset(228, 50),
-    "Frozen Vegetables": const Offset(262, 150),
-    "Snack Bars": const Offset(175, -20),
-    "Chips": const Offset(262, 150),
-    "Soda": const Offset(-10, 50),
+  // Use the supermarket-specific mapping of items to locations.
+  // These coordinates should be in the same coordinate system as your image's natural size.
+  final Map<String, Map<String, Offset>> supermarketItemLocations = {
+    'Lidl Swansea': {
+      "Milk": const Offset(250, -20),
+      "Bread": const Offset(130, 50),
+      "Eggs": const Offset(250, -20),
+      "Cheese": const Offset(175, -20),
+      "Butter": const Offset(250, -20),
+      "Apples": const Offset(300, 175),
+      "Bananas": const Offset(300, 175),
+      "Chicken Breast": const Offset(330, 10),
+      "Ground Beef": const Offset(330, 10),
+      "Carrots": const Offset(300, 175),
+      "Broccoli": const Offset(300, 175),
+      "Lettuce": const Offset(300, 175),
+      "Tomatoes": const Offset(300, 175),
+      "Potatoes": const Offset(300, 175),
+      "Pasta": const Offset(130, 50),
+      "Rice": const Offset(130, 50),
+      "Cereal": const Offset(228, 50),
+      "Yogurt": const Offset(250, -20),
+      "Orange Juice": const Offset(-10, 50),
+      "Coffee": const Offset(228, 50),
+      "Tea": const Offset(228, 50),
+      "Frozen Vegetables": const Offset(262, 150),
+      "Snack Bars": const Offset(175, -20),
+      "Chips": const Offset(262, 150),
+      "Soda": const Offset(-10, 50),
+    },
+    'Aldi Swansea': {
+      "Milk": const Offset(250, -20),
+      "Bread": const Offset(130, 50),
+      "Eggs": const Offset(250, -20),
+      "Cheese": const Offset(175, -20),
+      "Butter": const Offset(250, -20),
+      "Apples": const Offset(300, 175),
+      "Bananas": const Offset(300, 175),
+      "Chicken Breast": const Offset(330, 10),
+      "Ground Beef": const Offset(330, 10),
+      "Carrots": const Offset(300, 175),
+      "Broccoli": const Offset(300, 175),
+      "Lettuce": const Offset(300, 175),
+      "Tomatoes": const Offset(300, 175),
+      "Potatoes": const Offset(300, 175),
+      "Pasta": const Offset(130, 50),
+      "Rice": const Offset(130, 50),
+      "Cereal": const Offset(228, 50),
+      "Yogurt": const Offset(250, -20),
+      "Orange Juice": const Offset(-10, 50),
+      "Coffee": const Offset(228, 50),
+      "Tea": const Offset(228, 50),
+      "Frozen Vegetables": const Offset(262, 150),
+      "Snack Bars": const Offset(175, -20),
+      "Chips": const Offset(262, 150),
+      "Soda": const Offset(-10, 50),
+    },
+    'Tesco Extra': {
+      "Milk": const Offset(250, -20),
+      "Bread": const Offset(130, 50),
+      "Eggs": const Offset(250, -20),
+      "Cheese": const Offset(175, -20),
+      "Butter": const Offset(250, -20),
+      "Apples": const Offset(300, 175),
+      "Bananas": const Offset(300, 175),
+      "Chicken Breast": const Offset(330, 10),
+      "Ground Beef": const Offset(330, 10),
+      "Carrots": const Offset(300, 175),
+      "Broccoli": const Offset(300, 175),
+      "Lettuce": const Offset(300, 175),
+      "Tomatoes": const Offset(300, 175),
+      "Potatoes": const Offset(300, 175),
+      "Pasta": const Offset(130, 50),
+      "Rice": const Offset(130, 50),
+      "Cereal": const Offset(228, 50),
+      "Yogurt": const Offset(250, -20),
+      "Orange Juice": const Offset(-10, 50),
+      "Coffee": const Offset(228, 50),
+      "Tea": const Offset(228, 50),
+      "Frozen Vegetables": const Offset(262, 150),
+      "Snack Bars": const Offset(175, -20),
+      "Chips": const Offset(262, 150),
+      "Soda": const Offset(-10, 50),
+    },
+    'Sainsbury\'s': {
+      "Milk": const Offset(250, -20),
+      "Bread": const Offset(130, 50),
+      "Eggs": const Offset(250, -20),
+      "Cheese": const Offset(175, -20),
+      "Butter": const Offset(250, -20),
+      "Apples": const Offset(300, 175),
+      "Bananas": const Offset(300, 175),
+      "Chicken Breast": const Offset(330, 10),
+      "Ground Beef": const Offset(330, 10),
+      "Carrots": const Offset(300, 175),
+      "Broccoli": const Offset(300, 175),
+      "Lettuce": const Offset(300, 175),
+      "Tomatoes": const Offset(300, 175),
+      "Potatoes": const Offset(300, 175),
+      "Pasta": const Offset(130, 50),
+      "Rice": const Offset(130, 50),
+      "Cereal": const Offset(228, 50),
+      "Yogurt": const Offset(250, -20),
+      "Orange Juice": const Offset(-10, 50),
+      "Coffee": const Offset(228, 50),
+      "Tea": const Offset(228, 50),
+      "Frozen Vegetables": const Offset(262, 150),
+      "Snack Bars": const Offset(175, -20),
+      "Chips": const Offset(262, 150),
+      "Soda": const Offset(-10, 50),
+    },
   };
 
-  // Define a constant for the search bar height.
+  late final Map<String, Offset> _itemLocations;
+  late final List<String> _items;
+  List<String> _filteredItems = [];
+  String? _selectedItem;
+
   static const double kSearchBarHeight = 60.0;
 
   @override
   void initState() {
     super.initState();
-    _filteredShoppingItems = List.from(_shoppingItems);
-    // Start with an identity matrix.
+    _itemLocations = supermarketItemLocations[widget.supermarket] ?? {};
+    _items = _itemLocations.keys.toList();
+    _filteredItems = List.from(_items);
+    // Use the original transformation (scale 1.0) to match previous zoom level.
     _transformationController.value = Matrix4.identity()..scale(1.0);
   }
 
@@ -89,9 +154,9 @@ class _MapScreenState extends State<MapScreen> {
     String query = _searchController.text;
     setState(() {
       if (query.isEmpty) {
-        _filteredShoppingItems = List.from(_shoppingItems);
+        _filteredItems = List.from(_items);
       } else {
-        _filteredShoppingItems = _shoppingItems
+        _filteredItems = _items
             .where((item) =>
             item.toLowerCase().contains(query.toLowerCase()))
             .toList();
@@ -101,7 +166,6 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // If no map image URL is provided, show a loading indicator.
     if (widget.mapImageUrl.isEmpty) {
       return Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -113,15 +177,15 @@ class _MapScreenState extends State<MapScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Main content (map or list) positioned below the search bar.
+          // The map (and marker) are shown below the search bar.
           Positioned.fill(
             top: kSearchBarHeight,
             child: isSearching
                 ? ListView.builder(
               padding: EdgeInsets.zero,
-              itemCount: _filteredShoppingItems.length,
+              itemCount: _filteredItems.length,
               itemBuilder: (context, index) {
-                final item = _filteredShoppingItems[index];
+                final item = _filteredItems[index];
                 return ListTile(
                   title: Text(item),
                   onTap: () {
@@ -136,7 +200,8 @@ class _MapScreenState extends State<MapScreen> {
                 : LayoutBuilder(
               builder: (context, constraints) {
                 return InteractiveViewer(
-                  clipBehavior: Clip.none, // Allow overflow for pointer.
+                  // alignment: Alignment.center,
+                  clipBehavior: Clip.none,
                   boundaryMargin: EdgeInsets.zero,
                   minScale: 1.0,
                   maxScale: 5.0,
@@ -149,7 +214,7 @@ class _MapScreenState extends State<MapScreen> {
                     height: constraints.maxHeight,
                     alignment: Alignment.center,
                     child: Stack(
-                      clipBehavior: Clip.none, // Ensure pointer isn’t clipped.
+                      clipBehavior: Clip.none,
                       children: [
                         Image.asset(
                           widget.mapImageUrl,
@@ -173,14 +238,17 @@ class _MapScreenState extends State<MapScreen> {
               },
             ),
           ),
-          // The search bar stays at the top of the screen.
+          // The search bar remains fixed at the top.
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: SearchBarWidget(
-              controller: _searchController,
-              onSearchChanged: _filterItems,
+            child: Container(
+              height: kSearchBarHeight,
+              child: SearchBarWidget(
+                controller: _searchController,
+                onSearchChanged: _filterItems,
+              ),
             ),
           ),
         ],

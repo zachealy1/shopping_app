@@ -70,7 +70,7 @@ class _StoresScreenState extends State<StoresScreen> {
   @override
   void initState() {
     super.initState();
-    _filteredStores = _stores;
+    _filteredStores = List.from(_stores);
     _searchController.addListener(_onSearchChanged);
     _getUserLocation();
   }
@@ -79,19 +79,17 @@ class _StoresScreenState extends State<StoresScreen> {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        print('Location services are disabled.');
+        // Fallback to default coordinates.
         setState(() {
           _userLat = 51.616753;
           _userLon = -3.944417;
         });
         return;
       }
-
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          print('Location permissions are denied.');
           setState(() {
             _userLat = 51.616753;
             _userLon = -3.944417;
@@ -99,20 +97,16 @@ class _StoresScreenState extends State<StoresScreen> {
           return;
         }
       }
-
       if (permission == LocationPermission.deniedForever) {
-        print('Location permissions are permanently denied.');
         setState(() {
           _userLat = 51.616753;
           _userLon = -3.944417;
         });
         return;
       }
-
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       ).timeout(const Duration(seconds: 10), onTimeout: () {
-        print('Timeout reached while fetching location.');
         return Position(
           latitude: 51.616753,
           longitude: -3.944417,
@@ -126,13 +120,11 @@ class _StoresScreenState extends State<StoresScreen> {
           speedAccuracy: 0,
         );
       });
-
       setState(() {
         _userLat = position.latitude;
         _userLon = position.longitude;
       });
     } catch (e) {
-      print("Error getting location: $e");
       setState(() {
         _userLat = 51.616753;
         _userLon = -3.944417;
@@ -167,9 +159,10 @@ class _StoresScreenState extends State<StoresScreen> {
   void _onStoreTap(Map<String, String> store) async {
     final storeLat = double.tryParse(store['lat'] ?? '') ?? 0;
     final storeLon = double.tryParse(store['lon'] ?? '') ?? 0;
-    final distanceKm = _calculateDistance(_userLat, _userLon, storeLat, storeLon);
+    final distanceKm =
+    _calculateDistance(_userLat, _userLon, storeLat, storeLon);
     final distanceStr = '${distanceKm.toStringAsFixed(2)} km';
-    final mapImageUrl = store['mapImageAsset'] ?? 'assets/images/default_map.png';
+    final mapImageUrl = store['mapImageAsset'] ?? '';
 
     final result = await Navigator.push(
       context,
@@ -178,9 +171,9 @@ class _StoresScreenState extends State<StoresScreen> {
           name: store['name'] ?? 'No Name Available',
           distance: distanceStr,
           address: store['address'] ?? 'No Address Available',
-          imageUrl: store['imageAsset'] ?? 'assets/images/default_image.jpg',
-          hours: store['hours'] ?? 'No Hours Available',
-          description: store['description'] ?? 'No Description Available',
+          imageUrl: store['imageAsset'] ?? '',
+          hours: store['hours'] ?? '',
+          description: store['description'] ?? '',
           mapImageUrl: mapImageUrl,
         ),
       ),
@@ -210,10 +203,10 @@ class _StoresScreenState extends State<StoresScreen> {
 
     final sortedStores = List<Map<String, String>>.from(_filteredStores);
     sortedStores.sort((a, b) {
-      final aLat = double.tryParse(a['lat'] ?? '') ?? 0;
-      final aLon = double.tryParse(a['lon'] ?? '') ?? 0;
-      final bLat = double.tryParse(b['lat'] ?? '') ?? 0;
-      final bLon = double.tryParse(b['lon'] ?? '') ?? 0;
+      final aLat = double.tryParse(a['lat']!) ?? 0;
+      final aLon = double.tryParse(a['lon']!) ?? 0;
+      final bLat = double.tryParse(b['lat']!) ?? 0;
+      final bLon = double.tryParse(b['lon']!) ?? 0;
       final distanceA = _calculateDistance(_userLat, _userLon, aLat, aLon);
       final distanceB = _calculateDistance(_userLat, _userLon, bLat, bLon);
       return distanceA.compareTo(distanceB);
