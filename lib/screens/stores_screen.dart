@@ -5,7 +5,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'store_detail_screen.dart';
 import '../widgets/search_bar.dart';
 
+/// A screen that displays a list of stores fetched from Firestore.
+/// Stores are sorted by their distance from the user, and users may tap on a store
+/// to view its details on a separate screen.
 class StoresScreen extends StatefulWidget {
+  /// Callback to notify when the user chooses to open the map, returning
+  /// details such as the map image URL and the selected store name.
   final ValueChanged<Map<String, dynamic>>? onMapOpen;
 
   const StoresScreen({super.key, this.onMapOpen});
@@ -15,29 +20,37 @@ class StoresScreen extends StatefulWidget {
 }
 
 class _StoresScreenState extends State<StoresScreen> {
+  // User's latitude and longitude. These are initialised with defaults.
   double _userLat = 0;
   double _userLon = 0;
 
-  // Initially empty; will be populated from Firestore.
+  // List of stores fetched from Firestore.
   List<Map<String, dynamic>> _stores = [];
+  // List of stores filtered according to the user's search query.
   List<Map<String, dynamic>> _filteredStores = [];
+  // Controller to handle text input for searching.
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _fetchStores(); // Fetch stores from Firestore.
+    // Fetch store data from Firestore.
+    _fetchStores();
+    // Attach a listener to update the filtered list when the search text changes.
     _searchController.addListener(_onSearchChanged);
+    // Obtain the user's current location.
     _getUserLocation();
   }
 
-  // Fetch the stores from the Firestore collection "stores"
+  /// Fetches the list of stores from the Firestore collection 'stores'.
+  /// Each document is expected to contain fields such as name, address, imageAsset,
+  /// mapImageAsset, hours, description, lat and lon.
   Future<void> _fetchStores() async {
     try {
       QuerySnapshot snapshot =
       await FirebaseFirestore.instance.collection('stores').get();
 
-      // Convert each document into a map.
+      // Convert each Firestore document into a Map.
       List<Map<String, dynamic>> fetchedStores = snapshot.docs
           .map((doc) => doc.data() as Map<String, dynamic>)
           .toList();
@@ -48,10 +61,12 @@ class _StoresScreenState extends State<StoresScreen> {
       });
     } catch (e) {
       print("Error fetching stores: $e");
-      // Optionally, you might show an error message to the user.
+      // Optionally, present an error message to the user.
     }
   }
 
+  /// Obtains the user's current location using the Geolocator package.
+  /// Falls back to default coordinates if the location services are disabled or permission is denied.
   Future<void> _getUserLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -80,6 +95,7 @@ class _StoresScreenState extends State<StoresScreen> {
         });
         return;
       }
+      // Obtain the current position with high accuracy and a timeout.
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       ).timeout(const Duration(seconds: 10), onTimeout: () {
@@ -108,6 +124,7 @@ class _StoresScreenState extends State<StoresScreen> {
     }
   }
 
+  /// Filters the list of stores based on the user's search query.
   void _onSearchChanged() {
     setState(() {
       final query = _searchController.text.toLowerCase();
@@ -118,11 +135,13 @@ class _StoresScreenState extends State<StoresScreen> {
     });
   }
 
+  /// Converts degrees to radians.
   double _deg2rad(double deg) => deg * (pi / 180);
 
+  /// Calculates the distance between two geographical points using the Haversine formula.
   double _calculateDistance(
       double lat1, double lon1, double lat2, double lon2) {
-    const R = 6371;
+    const R = 6371; // Earth's radius in kilometres.
     final dLat = _deg2rad(lat2 - lat1);
     final dLon = _deg2rad(lon2 - lon1);
     final a = sin(dLat / 2) * sin(dLat / 2) +
@@ -132,14 +151,20 @@ class _StoresScreenState extends State<StoresScreen> {
     return R * c;
   }
 
+  /// Handles the user tapping on a store.
+  /// Calculates the distance to the store, then navigates to the [StoreDetailScreen]
+  /// passing relevant store data.
   void _onStoreTap(Map<String, dynamic> store) async {
+    // Parse the latitude and longitude from the store data.
     final storeLat = double.tryParse(store['lat']?.toString() ?? '') ?? 0;
     final storeLon = double.tryParse(store['lon']?.toString() ?? '') ?? 0;
+    // Calculate the distance from the user to the store.
     final distanceKm =
     _calculateDistance(_userLat, _userLon, storeLat, storeLon);
     final distanceStr = '${distanceKm.toStringAsFixed(2)} km';
     final mapImageUrl = store['mapImageAsset'] ?? '';
 
+    // Navigate to the StoreDetailScreen with the store information.
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -155,6 +180,7 @@ class _StoresScreenState extends State<StoresScreen> {
       ),
     );
 
+    // If the result is not null, notify the caller via the onMapOpen callback.
     if (result != null && result is Map) {
       if (widget.onMapOpen != null) {
         widget.onMapOpen!(result as Map<String, dynamic>);
@@ -166,6 +192,7 @@ class _StoresScreenState extends State<StoresScreen> {
 
   @override
   void dispose() {
+    // Remove the search listener and dispose of the controller to free up resources.
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
@@ -173,10 +200,12 @@ class _StoresScreenState extends State<StoresScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // If user location is not available yet, show a loading spinner.
     if (_userLat == 0 && _userLon == 0) {
       return const Center(child: CircularProgressIndicator());
     }
 
+    // Create a copy of the filtered stores and sort them by distance from the user.
     final sortedStores = List<Map<String, dynamic>>.from(_filteredStores);
     sortedStores.sort((a, b) {
       final aLat = double.tryParse(a['lat']?.toString() ?? '') ?? 0;
@@ -190,10 +219,12 @@ class _StoresScreenState extends State<StoresScreen> {
 
     return Column(
       children: [
+        // Display the search bar at the top.
         SearchBarWidget(
           controller: _searchController,
           onSearchChanged: _onSearchChanged,
         ),
+        // Display the list of stores in an expanded list view.
         Expanded(
           child: ListView.builder(
             itemCount: sortedStores.length,
@@ -204,6 +235,7 @@ class _StoresScreenState extends State<StoresScreen> {
               final distanceKm =
               _calculateDistance(_userLat, _userLon, storeLat, storeLon);
               return GestureDetector(
+                // Handle tap on the store item.
                 onTap: () => _onStoreTap(store),
                 child: _buildStoreItem(
                   name: store['name'] ?? '',
@@ -218,6 +250,7 @@ class _StoresScreenState extends State<StoresScreen> {
     );
   }
 
+  /// Builds an individual store item widget for display in the list.
   Widget _buildStoreItem({
     required String name,
     required String distance,
@@ -230,6 +263,7 @@ class _StoresScreenState extends State<StoresScreen> {
       ),
       child: Row(
         children: [
+          // Circular icon representing the store location.
           Container(
             width: 50,
             height: 50,
@@ -237,10 +271,14 @@ class _StoresScreenState extends State<StoresScreen> {
               color: Color(0xFFF1ECF7),
               shape: BoxShape.circle,
             ),
-            child:
-            const Icon(Icons.place, color: Color(0xFF1D2520), size: 24),
+            child: const Icon(
+              Icons.place,
+              color: Color(0xFF1D2520),
+              size: 24,
+            ),
           ),
           const SizedBox(width: 12),
+          // Display the store name with the distance and its address.
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,8 +302,12 @@ class _StoresScreenState extends State<StoresScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          const Icon(Icons.arrow_forward_ios,
-              color: Colors.black54, size: 20),
+          // Arrow icon indicating the item is tappable.
+          const Icon(
+            Icons.arrow_forward_ios,
+            color: Colors.black54,
+            size: 20,
+          ),
         ],
       ),
     );
