@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:ui';
 import '../widgets/search_bar.dart';
 
 class MapScreen extends StatefulWidget {
@@ -6,10 +8,10 @@ class MapScreen extends StatefulWidget {
   final String supermarket;
 
   const MapScreen({
-    super.key,
+    Key? key,
     required this.mapImageUrl,
     required this.supermarket,
-  });
+  }) : super(key: key);
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -20,119 +22,9 @@ class _MapScreenState extends State<MapScreen> {
   final TransformationController _transformationController =
   TransformationController();
 
-  final Map<String, Map<String, Offset>> supermarketItemLocations = {
-    'Lidl Swansea': {
-      "Milk": const Offset(250, -20),
-      "Bread": const Offset(130, 50),
-      "Eggs": const Offset(250, -20),
-      "Cheese": const Offset(175, -20),
-      "Butter": const Offset(250, -20),
-      "Apples": const Offset(300, 175),
-      "Bananas": const Offset(300, 175),
-      "Chicken Breast": const Offset(330, 10),
-      "Ground Beef": const Offset(330, 10),
-      "Carrots": const Offset(300, 175),
-      "Broccoli": const Offset(300, 175),
-      "Lettuce": const Offset(300, 175),
-      "Tomatoes": const Offset(300, 175),
-      "Potatoes": const Offset(300, 175),
-      "Pasta": const Offset(130, 50),
-      "Rice": const Offset(130, 50),
-      "Cereal": const Offset(228, 50),
-      "Yogurt": const Offset(250, -20),
-      "Orange Juice": const Offset(-10, 50),
-      "Coffee": const Offset(228, 50),
-      "Tea": const Offset(228, 50),
-      "Frozen Vegetables": const Offset(262, 150),
-      "Snack Bars": const Offset(175, -20),
-      "Chips": const Offset(262, 150),
-      "Soda": const Offset(-10, 50),
-    },
-    'Aldi Swansea': {
-      "Milk": const Offset(-10, 120),
-      "Bread": const Offset(50, 82),
-      "Eggs": const Offset(-10, 120),
-      "Cheese": const Offset(-10, 120),
-      "Butter": const Offset(-10, 120),
-      "Apples": const Offset(300, 180),
-      "Bananas": const Offset(300, 180),
-      "Chicken Breast": const Offset(0, 185),
-      "Ground Beef": const Offset(0, 185),
-      "Carrots": const Offset(300, 180),
-      "Broccoli": const Offset(300, 180),
-      "Lettuce": const Offset(300, 180),
-      "Tomatoes": const Offset(300, 180),
-      "Potatoes": const Offset(300, 180),
-      "Pasta": const Offset(50, 82),
-      "Rice": const Offset(50, 82),
-      "Cereal": const Offset(100, 50),
-      "Yogurt": const Offset(-10, 120),
-      "Orange Juice": const Offset(-10, 50),
-      "Coffee": const Offset(100, 50),
-      "Tea": const Offset(100, 50),
-      "Frozen Vegetables": const Offset(228, 50),
-      "Snack Bars": const Offset(-10, 80),
-      "Chips": const Offset(228, 50),
-      "Soda": const Offset(228, 10),
-    },
-    'Tesco Extra': {
-      "Milk": const Offset(165, 20),
-      "Bread": const Offset(233, 50),
-      "Eggs": const Offset(165, 20),
-      "Cheese": const Offset(195, 50),
-      "Butter": const Offset(165, 20),
-      "Apples": const Offset(103, 152),
-      "Bananas": const Offset(103, 152),
-      "Chicken Breast": const Offset(72, 10),
-      "Ground Beef": const Offset(72, 10),
-      "Carrots": const Offset(103, 152),
-      "Broccoli": const Offset(103, 152),
-      "Lettuce": const Offset(103, 152),
-      "Tomatoes": const Offset(103, 152),
-      "Potatoes": const Offset(103, 152),
-      "Pasta": const Offset(233, 50),
-      "Rice": const Offset(233, 50),
-      "Cereal": const Offset(264, 50),
-      "Yogurt": const Offset(165, 20),
-      "Orange Juice": const Offset(300, 50),
-      "Coffee": const Offset(264, 50),
-      "Tea": const Offset(264, 50),
-      "Frozen Vegetables": const Offset(300, 150),
-      "Snack Bars": const Offset(195, 50),
-      "Chips": const Offset(300, 150),
-      "Soda": const Offset(300, 50),
-    },
-    'Sainsbury\'s': {
-      "Milk": const Offset(163, 30),
-      "Bread": const Offset(258, 50),
-      "Eggs": const Offset(163, 30),
-      "Cheese": const Offset(170, 30),
-      "Butter": const Offset(163, 30),
-      "Apples": const Offset(300, 135),
-      "Bananas": const Offset(300, 135),
-      "Chicken Breast": const Offset(70, 10),
-      "Ground Beef": const Offset(70, 10),
-      "Carrots": const Offset(300, 135),
-      "Broccoli": const Offset(300, 135),
-      "Lettuce": const Offset(300, 135),
-      "Tomatoes": const Offset(300, 135),
-      "Potatoes": const Offset(300, 135),
-      "Pasta": const Offset(258, 50),
-      "Rice": const Offset(258, 50),
-      "Cereal": const Offset(265, 50),
-      "Yogurt": const Offset(163, 30),
-      "Orange Juice": const Offset(300, 30),
-      "Coffee": const Offset(265, 50),
-      "Tea": const Offset(265, 50),
-      "Frozen Vegetables": const Offset(162, 150),
-      "Snack Bars": const Offset(170, 30),
-      "Chips": const Offset(162, 150),
-      "Soda": const Offset(300, 30),
-    },
-  };
-
-  late final Map<String, Offset> _itemLocations;
-  late final List<String> _items;
+  // This will be populated from Firestore.
+  Map<String, Offset> _itemLocations = {};
+  List<String> _items = [];
   List<String> _filteredItems = [];
   String? _selectedItem;
 
@@ -141,11 +33,59 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    _itemLocations = supermarketItemLocations[widget.supermarket] ?? {};
-    _items = _itemLocations.keys.toList();
-    _filteredItems = List.from(_items);
-    // Use the original transformation (scale 1.0) to match previous zoom level.
+    _fetchItemLocations();
+    _searchController.addListener(_filterItems);
     _transformationController.value = Matrix4.identity()..scale(1.0);
+  }
+
+  /// Maps the supermarket name to its corresponding Firestore document ID.
+  String _getDocumentId(String supermarket) {
+    final lower = supermarket.toLowerCase();
+    if (lower.contains('aldi')) return 'aldi';
+    if (lower.contains('lidl')) return 'lidl';
+    if (lower.contains('tesco')) return 'tesco';
+    if (lower.contains('sainsbury')) return 'sainsbury';
+    return '';
+  }
+
+  Future<void> _fetchItemLocations() async {
+    try {
+      final docId = _getDocumentId(widget.supermarket);
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('items')
+          .doc(docId)
+          .get();
+
+      print("Fetched document for $docId: ${doc.data()}");
+
+      if (doc.exists) {
+        Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?;
+        if (data != null) {
+          // If your document has an "itemLocations" field, use that. Otherwise, use the data directly.
+          Map<String, dynamic> locationsMap = data.containsKey('itemLocations')
+              ? data['itemLocations'] as Map<String, dynamic>
+              : data;
+
+          Map<String, Offset> fetchedLocations = {};
+          locationsMap.forEach((key, value) {
+            if (value is Map<String, dynamic>) {
+              final double x = (value['x'] as num?)?.toDouble() ?? 0.0;
+              final double y = (value['y'] as num?)?.toDouble() ?? 0.0;
+              fetchedLocations[key] = Offset(x, y);
+            }
+          });
+          setState(() {
+            _itemLocations = fetchedLocations;
+            _items = _itemLocations.keys.toList();
+            _filteredItems = List.from(_items);
+          });
+        }
+      } else {
+        print("No document found for supermarket ${widget.supermarket}");
+      }
+    } catch (e) {
+      print("Error fetching item locations: $e");
+    }
   }
 
   void _filterItems() {
@@ -163,6 +103,14 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   @override
+  void dispose() {
+    _searchController.removeListener(_filterItems);
+    _searchController.dispose();
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (widget.mapImageUrl.isEmpty) {
       return Scaffold(
@@ -175,7 +123,7 @@ class _MapScreenState extends State<MapScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // The map (and marker) are shown below the search bar.
+          // Map view with markers.
           Positioned.fill(
             top: kSearchBarHeight,
             child: isSearching
@@ -198,7 +146,6 @@ class _MapScreenState extends State<MapScreen> {
                 : LayoutBuilder(
               builder: (context, constraints) {
                 return InteractiveViewer(
-                  // alignment: Alignment.center,
                   clipBehavior: Clip.none,
                   boundaryMargin: EdgeInsets.zero,
                   minScale: 1.0,
@@ -225,7 +172,7 @@ class _MapScreenState extends State<MapScreen> {
                             top: _itemLocations[_selectedItem]!.dy,
                             child: const Icon(
                               Icons.location_on,
-                              color: Colors.red,
+                              color: Color(0xFF1d1b20),
                               size: 30,
                             ),
                           ),
@@ -236,12 +183,12 @@ class _MapScreenState extends State<MapScreen> {
               },
             ),
           ),
-          // The search bar remains fixed at the top.
+          // Fixed search bar.
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            child: Container(
+            child: SizedBox(
               height: kSearchBarHeight,
               child: SearchBarWidget(
                 controller: _searchController,
