@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:geolocator/geolocator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'screens/map_screen.dart';
 import 'screens/stores_screen.dart';
@@ -48,49 +49,8 @@ class _HomePageState extends State<HomePage> {
     'Tesco Shopping List',
   ];
 
-  // Default store list with coordinates and map image assets.
-  final List<Map<String, String>> _stores = [
-    {
-      'name': 'Aldi Swansea',
-      'address': 'Unit 1, Parc Tawe, Swansea SA1 2AS',
-      'imageAsset': 'assets/images/aldi.jpg',
-      'mapImageAsset': 'assets/images/aldi-map.png',
-      'hours': 'Monday to Saturday: 8:00 AM – 8:00 PM; Sunday: 10:00 AM – 4:00 PM.',
-      'description': 'This store offers a range of groceries, fresh produce, and household essentials at low prices.',
-      'lat': '51.621139',
-      'lon': '-3.938108',
-    },
-    {
-      'name': 'Tesco Extra',
-      'address': 'Albert Row, Swansea SA1 3RA',
-      'imageAsset': 'assets/images/tesco.jpg',
-      'mapImageAsset': 'assets/images/tesco-map.png',
-      'hours': 'Monday to Saturday: 6:00 AM – 10:00 PM; Sunday: 10:00 AM – 4:00 PM.',
-      'description': 'Tesco Extra offers groceries, clothing, electronics, and home goods. Facilities include a café and cash machines.',
-      'lat': '51.616753',
-      'lon': '-3.944417',
-    },
-    {
-      'name': 'Lidl Swansea',
-      'address': 'Trinity Place, Swansea SA1 2DQ',
-      'imageAsset': 'assets/images/lidl.jpg',
-      'mapImageAsset': 'assets/images/lidl-map.png',
-      'hours': 'Monday to Saturday: 8:00 AM – 10:00 PM; Sunday: 10:00 AM – 4:00 PM.',
-      'description': 'Lidl Swansea provides fresh produce, bakery items, and quality household products at low prices.',
-      'lat': '51.624111',
-      'lon': '-3.939608',
-    },
-    {
-      'name': 'Sainsbury\'s',
-      'address': 'Quay Parade, Swansea SA1 8AJ',
-      'imageAsset': 'assets/images/sainsburys.jpg',
-      'mapImageAsset': 'assets/images/sainsburys-map.png',
-      'hours': 'Monday to Saturday: 7:00 AM – 9:00 PM; Sunday: 10:00 AM – 4:00 PM.',
-      'description': 'Sainsbury\'s offers groceries, clothing, electronics, and home essentials. Services include a café, pharmacy, and photo booth.',
-      'lat': '51.620128',
-      'lon': '-3.935925',
-    },
-  ];
+  // Instead of a hardcoded list, we'll fetch this from Firestore.
+  List<Map<String, String>> _stores = [];
 
   late List<Map<String, dynamic>> _screens;
 
@@ -101,6 +61,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+
     _screens = [
       {
         'title': 'Map',
@@ -115,7 +76,7 @@ class _HomePageState extends State<HomePage> {
               _selectedIndex = result['selectedTab'] as int;
               // Expecting result to include both the map image URL and the supermarket identifier.
               _screens[0] = {
-                'title': 'Map',
+                'title': 'Map (${result['storeName'] as String})',
                 'widget': MapScreen(
                   key: const ValueKey('MapScreen'),
                   mapImageUrl: result['mapImageUrl'] as String,
@@ -134,13 +95,42 @@ class _HomePageState extends State<HomePage> {
         'showAddButton': true,
       },
     ];
+    
+    _fetchStores().then((_) {
+      _getUserLocationAndSetDefaultMap();
+    });
+  }
 
-    _getUserLocationAndSetDefaultMap();
+  Future<void> _fetchStores() async {
+    try {
+      QuerySnapshot snapshot =
+      await FirebaseFirestore.instance.collection('stores').get();
+
+      List<Map<String, String>> fetchedStores = snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return {
+          'name': data['name']?.toString() ?? '',
+          'address': data['address']?.toString() ?? '',
+          'imageAsset': data['imageAsset']?.toString() ?? '',
+          'mapImageAsset': data['mapImageAsset']?.toString() ?? '',
+          'hours': data['hours']?.toString() ?? '',
+          'description': data['description']?.toString() ?? '',
+          'lat': data['lat']?.toString() ?? '',
+          'lon': data['lon']?.toString() ?? '',
+        };
+      }).toList();
+
+      setState(() {
+        _stores = fetchedStores;
+      });
+    } catch (e) {
+      print('Error fetching stores: $e');
+    }
   }
 
   // Helper function to determine the supermarket from the store name.
   String _getSupermarket(String storeName) {
-    if (storeName == '') {
+    if (storeName.isEmpty) {
       return "Aldi Swansea";
     } else {
       return storeName;
@@ -196,25 +186,28 @@ class _HomePageState extends State<HomePage> {
     String defaultMapImageUrl = sortedStores.isNotEmpty
         ? sortedStores.first['mapImageAsset'] ?? ''
         : '';
-    String storeName = sortedStores.isNotEmpty ? sortedStores.first['name']! : 'Aldi';
+    String storeName =
+    sortedStores.isNotEmpty ? sortedStores.first['name']! : 'Aldi';
     String supermarket = _getSupermarket(storeName);
 
     setState(() {
       _screens[0] = {
-        'title': 'Map',
+        'title': 'Map ($supermarket)',
         'widget': MapScreen(mapImageUrl: defaultMapImageUrl, supermarket: supermarket),
         'showAddButton': false,
       };
     });
 
     // Show an alert to notify the user of the nearest store.
-    String nearestStoreName = sortedStores.isNotEmpty ? sortedStores.first['name']! : 'Unknown';
+    String nearestStoreName =
+    sortedStores.isNotEmpty ? sortedStores.first['name']! : 'Unknown';
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text("Nearest Store Determined"),
-          content: Text("The nearest store is $nearestStoreName. The default map has been updated accordingly."),
+          content: Text(
+              "The nearest store is $nearestStoreName. The default map has been updated accordingly."),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -230,7 +223,8 @@ class _HomePageState extends State<HomePage> {
   double _deg2rad(double deg) => deg * (pi / 180);
 
   // Helper: compute distance in km using the Haversine formula.
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+  double _calculateDistance(
+      double lat1, double lon1, double lat2, double lon2) {
     const R = 6371; // Earth's radius in km.
     final dLat = _deg2rad(lat2 - lat1);
     final dLon = _deg2rad(lon2 - lon1);
@@ -269,7 +263,8 @@ class _HomePageState extends State<HomePage> {
                 if (listController.text.isNotEmpty) {
                   setState(() {
                     _shoppingLists.add(listController.text);
-                    _screens[2]['widget'] = ListScreen(shoppingLists: _shoppingLists);
+                    _screens[2]['widget'] =
+                        ListScreen(shoppingLists: _shoppingLists);
                   });
                   Navigator.of(context).pop();
                 }
@@ -292,7 +287,9 @@ class _HomePageState extends State<HomePage> {
       appBar: HeaderWidget(
         title: _screens[_selectedIndex]['title'],
         showAddButton: _screens[_selectedIndex]['showAddButton'],
-        onAddPressed: _screens[_selectedIndex]['showAddButton'] ? _onAddButtonPressed : null,
+        onAddPressed: _screens[_selectedIndex]['showAddButton']
+            ? _onAddButtonPressed
+            : null,
       ),
       body: _screens[_selectedIndex]['widget'],
       bottomNavigationBar: BottomNavBar(
