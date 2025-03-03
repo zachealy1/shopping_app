@@ -28,6 +28,15 @@ class _MapScreenState extends State<MapScreen> {
   List<String> _filteredItems = [];
   String? _selectedItem;
 
+  // Store closing times fetched from Firestore.
+  int? _weekdayClosingHour;
+  int? _weekdayClosingMinute;
+  int? _sundayClosingHour;
+  int? _sundayClosingMinute;
+
+  // Ensure we only show the alert once.
+  bool _alertShown = false;
+
   static const double kSearchBarHeight = 60.0;
 
   @override
@@ -36,6 +45,11 @@ class _MapScreenState extends State<MapScreen> {
     _fetchItemLocations();
     _searchController.addListener(_filterItems);
     _transformationController.value = Matrix4.identity()..scale(1.0);
+
+    // Check if the store is close to closing after the first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkIfStoreCloseToClosing();
+    });
   }
 
   /// Maps the supermarket name to its corresponding Firestore document ID.
@@ -44,7 +58,7 @@ class _MapScreenState extends State<MapScreen> {
     if (lower.contains('aldi')) return 'aldi';
     if (lower.contains('lidl')) return 'lidl';
     if (lower.contains('tesco')) return 'tesco';
-    if (lower.contains('sainsbury')) return 'sainsbury';
+    if (lower.contains('sainsbury')) return 'sainsburys';
     return '';
   }
 
@@ -61,6 +75,25 @@ class _MapScreenState extends State<MapScreen> {
       if (doc.exists) {
         Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?;
         if (data != null) {
+          // Fetch closing times from the document.
+          final int weekdayHour = int.tryParse(
+              data['weekdayClosingHour']?.toString() ?? '20') ??
+              20;
+          final int weekdayMinute =
+              int.tryParse(data['weekdayClosingMinute']?.toString() ?? '0') ?? 0;
+          final int sundayHour = int.tryParse(
+              data['sundayClosingHour']?.toString() ?? '16') ??
+              16;
+          final int sundayMinute =
+              int.tryParse(data['sundayClosingMinute']?.toString() ?? '0') ?? 0;
+
+          setState(() {
+            _weekdayClosingHour = weekdayHour;
+            _weekdayClosingMinute = weekdayMinute;
+            _sundayClosingHour = sundayHour;
+            _sundayClosingMinute = sundayMinute;
+          });
+
           // If your document has an "itemLocations" field, use that. Otherwise, use the data directly.
           Map<String, dynamic> locationsMap = data.containsKey('itemLocations')
               ? data['itemLocations'] as Map<String, dynamic>
@@ -100,6 +133,44 @@ class _MapScreenState extends State<MapScreen> {
             .toList();
       }
     });
+  }
+
+  /// Checks if the current store is close to closing and shows an alert if it is.
+  void _checkIfStoreCloseToClosing() {
+    if (_alertShown) return;
+
+    // Determine if today is Sunday.
+    bool isSunday = DateTime.now().weekday == DateTime.sunday; // Sunday is 7.
+
+    // Use the closing times fetched from Firestore.
+    int? closingHour = isSunday ? _sundayClosingHour : _weekdayClosingHour;
+    int? closingMinute = isSunday ? _sundayClosingMinute : _weekdayClosingMinute;
+
+    if (closingHour != null && closingMinute != null) {
+      final closingTimeMinutes = closingHour * 60 + closingMinute;
+      final now = TimeOfDay.now();
+      final nowMinutes = now.hour * 60 + now.minute;
+
+      // If within 30 minutes of closing (and not already closed)
+      if (closingTimeMinutes - nowMinutes <= 30 &&
+          closingTimeMinutes - nowMinutes > 0) {
+        _alertShown = true;
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Store Closing Soon'),
+            content: Text(
+                '${widget.supermarket} is close to closing at ${TimeOfDay(hour: closingHour, minute: closingMinute).format(context)}. Please hurry up!'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
   }
 
   @override

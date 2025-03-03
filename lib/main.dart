@@ -95,7 +95,7 @@ class _HomePageState extends State<HomePage> {
         'showAddButton': true,
       },
     ];
-    
+
     _fetchStores().then((_) {
       _getUserLocationAndSetDefaultMap();
     });
