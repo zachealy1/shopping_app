@@ -61,18 +61,42 @@ class _ListDetailsScreenState extends State<ListDetailsScreen> {
   }
 
   /// Toggles the checked state of an item and updates both the original
-  /// and filtered lists to remain consistent.
+  /// and filtered lists to remain consistent. After toggling, it checks if all
+  /// items are ticked off and shows a congratulatory message if so.
   void _toggleItem(int index) {
     setState(() {
       // Flip the 'checked' status.
       _filteredItems[index]['checked'] = !_filteredItems[index]['checked'];
       // Find the corresponding item in the original list.
-      int originalIndex = _items.indexWhere((item) => item['name'] == _filteredItems[index]['name']);
+      int originalIndex = _items.indexWhere(
+              (item) => item['name'] == _filteredItems[index]['name']);
       if (originalIndex != -1) {
         _items[originalIndex]['checked'] = _filteredItems[index]['checked'];
       }
     });
     _saveItems();
+    // Check if all items are completed.
+    _checkAllItemsCompleted();
+  }
+
+  /// Checks whether every item in the list is marked as checked.
+  /// If so, displays a congratulatory AlertDialog.
+  void _checkAllItemsCompleted() {
+    if (_items.isNotEmpty && _items.every((item) => item['checked'] == true)) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Congratulations!'),
+          content: const Text('You have completed your list!'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   /// Opens a dialog to allow the user to add a new item to the list.
