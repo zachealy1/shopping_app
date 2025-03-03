@@ -3,8 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:ui';
 import '../widgets/search_bar.dart';
 
+/// A screen that displays a map image with item markers for a specified supermarket.
+/// This screen fetches both item locations and closing times from Firestore, and will alert the user
+/// if the store is nearing its closing time (with separate times for Sundays and weekdays).
 class MapScreen extends StatefulWidget {
+  /// The URL of the map image to display.
   final String mapImageUrl;
+
+  /// The name of the supermarket (e.g. 'Aldi Swansea') to display and use for data lookup.
   final String supermarket;
 
   const MapScreen({
@@ -18,41 +24,56 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+  // Controller for managing the search input text.
   final TextEditingController _searchController = TextEditingController();
+
+  // Controller for handling map zooming and panning.
   final TransformationController _transformationController =
   TransformationController();
 
-  // This will be populated from Firestore.
+  // A map of item names to their corresponding locations (offsets) on the map.
   Map<String, Offset> _itemLocations = {};
+
+  // List of all item names fetched from Firestore.
   List<String> _items = [];
+
+  // List of item names filtered according to the user's search query.
   List<String> _filteredItems = [];
+
+  // The currently selected item, if any.
   String? _selectedItem;
 
   // Store closing times fetched from Firestore.
+  // These represent the closing hours and minutes for weekdays and Sundays respectively.
   int? _weekdayClosingHour;
   int? _weekdayClosingMinute;
   int? _sundayClosingHour;
   int? _sundayClosingMinute;
 
-  // Ensure we only show the alert once.
+  // Flag to ensure the closing alert is only displayed once per session.
   bool _alertShown = false;
 
+  // Height reserved for the search bar widget.
   static const double kSearchBarHeight = 60.0;
 
   @override
   void initState() {
     super.initState();
+    // Retrieve item locations and closing times from Firestore.
     _fetchItemLocations();
+    // Listen to changes in the search field to update the filtered list.
     _searchController.addListener(_filterItems);
+    // Initialise the transformation controller with an identity matrix.
     _transformationController.value = Matrix4.identity()..scale(1.0);
 
-    // Check if the store is close to closing after the first frame.
+    // Once the first frame is rendered, check if the store is close to closing.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkIfStoreCloseToClosing();
     });
   }
 
   /// Maps the supermarket name to its corresponding Firestore document ID.
+  /// Assumes document IDs are in lowercase (e.g. 'aldi', 'lidl', 'tesco', 'sainsburys').
   String _getDocumentId(String supermarket) {
     final lower = supermarket.toLowerCase();
     if (lower.contains('aldi')) return 'aldi';
@@ -62,6 +83,8 @@ class _MapScreenState extends State<MapScreen> {
     return '';
   }
 
+  /// Fetches item locations and store closing times from Firestore.
+  /// Expects the document to include closing times (weekday and Sunday) and an 'itemLocations' field.
   Future<void> _fetchItemLocations() async {
     try {
       final docId = _getDocumentId(widget.supermarket);
@@ -70,12 +93,13 @@ class _MapScreenState extends State<MapScreen> {
           .doc(docId)
           .get();
 
+      // Log the fetched document for debugging.
       print("Fetched document for $docId: ${doc.data()}");
 
       if (doc.exists) {
         Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?;
         if (data != null) {
-          // Fetch closing times from the document.
+          // Extract closing time details from the document.
           final int weekdayHour = int.tryParse(
               data['weekdayClosingHour']?.toString() ?? '20') ??
               20;
@@ -94,11 +118,13 @@ class _MapScreenState extends State<MapScreen> {
             _sundayClosingMinute = sundayMinute;
           });
 
-          // If your document has an "itemLocations" field, use that. Otherwise, use the data directly.
+          // Determine the map of item locations.
+          // Use the 'itemLocations' field if present; otherwise, assume the document holds the locations directly.
           Map<String, dynamic> locationsMap = data.containsKey('itemLocations')
               ? data['itemLocations'] as Map<String, dynamic>
               : data;
 
+          // Convert each entry into an Offset.
           Map<String, Offset> fetchedLocations = {};
           locationsMap.forEach((key, value) {
             if (value is Map<String, dynamic>) {
@@ -121,6 +147,7 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  /// Filters the item list based on the current search query.
   void _filterItems() {
     String query = _searchController.text;
     setState(() {
@@ -135,14 +162,15 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
-  /// Checks if the current store is close to closing and shows an alert if it is.
+  /// Checks if the store is close to its closing time and shows an alert if so.
+  /// Considers different closing times for Sundays and weekdays.
   void _checkIfStoreCloseToClosing() {
     if (_alertShown) return;
 
     // Determine if today is Sunday.
-    bool isSunday = DateTime.now().weekday == DateTime.sunday; // Sunday is 7.
+    bool isSunday = DateTime.now().weekday == DateTime.sunday; // Sunday is represented as 7.
 
-    // Use the closing times fetched from Firestore.
+    // Select the appropriate closing times.
     int? closingHour = isSunday ? _sundayClosingHour : _weekdayClosingHour;
     int? closingMinute = isSunday ? _sundayClosingMinute : _weekdayClosingMinute;
 
@@ -151,7 +179,7 @@ class _MapScreenState extends State<MapScreen> {
       final now = TimeOfDay.now();
       final nowMinutes = now.hour * 60 + now.minute;
 
-      // If within 30 minutes of closing (and not already closed)
+      // If the store is within 30 minutes of closing (and it is not already closed), display an alert.
       if (closingTimeMinutes - nowMinutes <= 30 &&
           closingTimeMinutes - nowMinutes > 0) {
         _alertShown = true;
@@ -175,6 +203,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    // Clean up the controllers and remove listeners.
     _searchController.removeListener(_filterItems);
     _searchController.dispose();
     _transformationController.dispose();
@@ -183,18 +212,20 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // If the map image URL is empty, display a loading spinner.
     if (widget.mapImageUrl.isEmpty) {
       return Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
+    // Determine if the user is performing a search.
     final bool isSearching = _searchController.text.isNotEmpty;
 
     return Scaffold(
       body: Stack(
         children: [
-          // Map view with markers.
+          // The map view along with interactive item markers is displayed below the search bar.
           Positioned.fill(
             top: kSearchBarHeight,
             child: isSearching
@@ -232,10 +263,12 @@ class _MapScreenState extends State<MapScreen> {
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
+                        // Display the map image.
                         Image.asset(
                           widget.mapImageUrl,
                           fit: BoxFit.contain,
                         ),
+                        // If an item is selected, place its marker on the map.
                         if (_selectedItem != null &&
                             _itemLocations.containsKey(_selectedItem))
                           Positioned(
@@ -254,7 +287,7 @@ class _MapScreenState extends State<MapScreen> {
               },
             ),
           ),
-          // Fixed search bar.
+          // The search bar remains fixed at the top.
           Positioned(
             top: 0,
             left: 0,
