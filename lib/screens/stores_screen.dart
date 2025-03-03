@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:geolocator/geolocator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'store_detail_screen.dart';
 import '../widgets/search_bar.dart';
 
@@ -17,69 +18,44 @@ class _StoresScreenState extends State<StoresScreen> {
   double _userLat = 0;
   double _userLon = 0;
 
-  final List<Map<String, String>> _stores = [
-    {
-      'name': 'Aldi Swansea',
-      'address': 'Unit 1, Parc Tawe, Swansea SA1 2AS',
-      'imageAsset': 'assets/images/aldi.jpg',
-      'mapImageAsset': 'assets/images/aldi-map.png',
-      'hours': 'Monday to Saturday: 8:00 AM – 8:00 PM; Sunday: 10:00 AM – 4:00 PM.',
-      'description':
-      'This store offers a range of groceries, fresh produce, and household essentials at low prices.',
-      'lat': '51.621139',
-      'lon': '-3.938108',
-    },
-    {
-      'name': 'Tesco Extra',
-      'address': 'Albert Row, Swansea SA1 3RA',
-      'imageAsset': 'assets/images/tesco.jpg',
-      'mapImageAsset': 'assets/images/tesco-map.png',
-      'hours': 'Monday to Saturday: 6:00 AM – 10:00 PM; Sunday: 10:00 AM – 4:00 PM.',
-      'description':
-      'Tesco Extra offers groceries, clothing, electronics, and home goods. Facilities include a café and cash machines.',
-      'lat': '51.616753',
-      'lon': '-3.944417',
-    },
-    {
-      'name': 'Lidl Swansea',
-      'address': 'Trinity Place, Swansea SA1 2DQ',
-      'imageAsset': 'assets/images/lidl.jpg',
-      'mapImageAsset': 'assets/images/lidl-map.png',
-      'hours': 'Monday to Saturday: 8:00 AM – 10:00 PM; Sunday: 10:00 AM – 4:00 PM.',
-      'description':
-      'Lidl Swansea provides fresh produce, bakery items, and quality household products at low prices.',
-      'lat': '51.624111',
-      'lon': '-3.939608',
-    },
-    {
-      'name': 'Sainsbury\'s',
-      'address': 'Quay Parade, Swansea SA1 8AJ',
-      'imageAsset': 'assets/images/sainsburys.jpg',
-      'mapImageAsset': 'assets/images/sainsburys-map.png',
-      'hours': 'Monday to Saturday: 7:00 AM – 9:00 PM; Sunday: 10:00 AM – 4:00 PM.',
-      'description':
-      'Sainsbury\'s offers groceries, clothing, electronics, and home essentials. Services include a café, pharmacy, and photo booth.',
-      'lat': '51.620128',
-      'lon': '-3.935925',
-    },
-  ];
-
-  List<Map<String, String>> _filteredStores = [];
+  // Initially empty; will be populated from Firestore.
+  List<Map<String, dynamic>> _stores = [];
+  List<Map<String, dynamic>> _filteredStores = [];
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _filteredStores = List.from(_stores);
+    _fetchStores(); // Fetch stores from Firestore.
     _searchController.addListener(_onSearchChanged);
     _getUserLocation();
+  }
+
+  // Fetch the stores from the Firestore collection "stores"
+  Future<void> _fetchStores() async {
+    try {
+      QuerySnapshot snapshot =
+      await FirebaseFirestore.instance.collection('stores').get();
+
+      // Convert each document into a map.
+      List<Map<String, dynamic>> fetchedStores = snapshot.docs
+          .map((doc) => doc.data() as Map<String, dynamic>)
+          .toList();
+
+      setState(() {
+        _stores = fetchedStores;
+        _filteredStores = List.from(fetchedStores);
+      });
+    } catch (e) {
+      print("Error fetching stores: $e");
+      // Optionally, you might show an error message to the user.
+    }
   }
 
   Future<void> _getUserLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        // Fallback to default coordinates.
         setState(() {
           _userLat = 51.616753;
           _userLon = -3.944417;
@@ -136,8 +112,8 @@ class _StoresScreenState extends State<StoresScreen> {
     setState(() {
       final query = _searchController.text.toLowerCase();
       _filteredStores = _stores.where((store) {
-        return store['name']!.toLowerCase().contains(query) ||
-            store['address']!.toLowerCase().contains(query);
+        return (store['name']?.toLowerCase().contains(query) ?? false) ||
+            (store['address']?.toLowerCase().contains(query) ?? false);
       }).toList();
     });
   }
@@ -156,9 +132,9 @@ class _StoresScreenState extends State<StoresScreen> {
     return R * c;
   }
 
-  void _onStoreTap(Map<String, String> store) async {
-    final storeLat = double.tryParse(store['lat'] ?? '') ?? 0;
-    final storeLon = double.tryParse(store['lon'] ?? '') ?? 0;
+  void _onStoreTap(Map<String, dynamic> store) async {
+    final storeLat = double.tryParse(store['lat']?.toString() ?? '') ?? 0;
+    final storeLon = double.tryParse(store['lon']?.toString() ?? '') ?? 0;
     final distanceKm =
     _calculateDistance(_userLat, _userLon, storeLat, storeLon);
     final distanceStr = '${distanceKm.toStringAsFixed(2)} km';
@@ -201,12 +177,12 @@ class _StoresScreenState extends State<StoresScreen> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final sortedStores = List<Map<String, String>>.from(_filteredStores);
+    final sortedStores = List<Map<String, dynamic>>.from(_filteredStores);
     sortedStores.sort((a, b) {
-      final aLat = double.tryParse(a['lat']!) ?? 0;
-      final aLon = double.tryParse(a['lon']!) ?? 0;
-      final bLat = double.tryParse(b['lat']!) ?? 0;
-      final bLon = double.tryParse(b['lon']!) ?? 0;
+      final aLat = double.tryParse(a['lat']?.toString() ?? '') ?? 0;
+      final aLon = double.tryParse(a['lon']?.toString() ?? '') ?? 0;
+      final bLat = double.tryParse(b['lat']?.toString() ?? '') ?? 0;
+      final bLon = double.tryParse(b['lon']?.toString() ?? '') ?? 0;
       final distanceA = _calculateDistance(_userLat, _userLon, aLat, aLon);
       final distanceB = _calculateDistance(_userLat, _userLon, bLat, bLon);
       return distanceA.compareTo(distanceB);
@@ -223,16 +199,16 @@ class _StoresScreenState extends State<StoresScreen> {
             itemCount: sortedStores.length,
             itemBuilder: (context, index) {
               final store = sortedStores[index];
-              final storeLat = double.tryParse(store['lat'] ?? '') ?? 0;
-              final storeLon = double.tryParse(store['lon'] ?? '') ?? 0;
+              final storeLat = double.tryParse(store['lat']?.toString() ?? '') ?? 0;
+              final storeLon = double.tryParse(store['lon']?.toString() ?? '') ?? 0;
               final distanceKm =
               _calculateDistance(_userLat, _userLon, storeLat, storeLon);
               return GestureDetector(
                 onTap: () => _onStoreTap(store),
                 child: _buildStoreItem(
-                  name: store['name']!,
+                  name: store['name'] ?? '',
                   distance: '${distanceKm.toStringAsFixed(2)} km',
-                  address: store['address']!,
+                  address: store['address'] ?? '',
                 ),
               );
             },
@@ -261,7 +237,8 @@ class _StoresScreenState extends State<StoresScreen> {
               color: Color(0xFFF1ECF7),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.place, color: Color(0xFF1D2520), size: 24),
+            child:
+            const Icon(Icons.place, color: Color(0xFF1D2520), size: 24),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -287,7 +264,8 @@ class _StoresScreenState extends State<StoresScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          const Icon(Icons.arrow_forward_ios, color: Colors.black54, size: 20),
+          const Icon(Icons.arrow_forward_ios,
+              color: Colors.black54, size: 20),
         ],
       ),
     );

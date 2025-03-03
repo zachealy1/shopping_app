@@ -1,6 +1,8 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:geolocator/geolocator.dart';
+import 'firebase_options.dart';
 import 'screens/map_screen.dart';
 import 'screens/stores_screen.dart';
 import 'screens/list_screen.dart';
@@ -8,7 +10,11 @@ import 'widgets/bottom_nav_bar.dart';
 import 'widgets/header_widget.dart';
 import 'theme/app_theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 

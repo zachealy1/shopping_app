@@ -20,8 +20,6 @@ class _MapScreenState extends State<MapScreen> {
   final TransformationController _transformationController =
   TransformationController();
 
-  // Use the supermarket-specific mapping of items to locations.
-  // These coordinates should be in the same coordinate system as your image's natural size.
   final Map<String, Map<String, Offset>> supermarketItemLocations = {
     'Lidl Swansea': {
       "Milk": const Offset(250, -20),
