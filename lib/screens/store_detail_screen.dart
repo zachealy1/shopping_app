@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/link.dart';
 
 /// A stateless screen displaying detailed information about a store.
-/// This screen shows store details such as name, address, opening hours,
-/// description and an image, along with a button to navigate back to the map.
+/// This screen shows store details such as name, address, operating hours, description,
+/// an image, and now includes a website section that displays the store's website as a clickable link.
 class StoreDetailScreen extends StatelessWidget {
   /// The name of the store.
   final String name;
   /// The distance from the user to the store.
   final String distance;
-  /// The address of the store.
+  /// The store's address.
   final String address;
   /// The asset path of the store's image.
   final String imageUrl;
-  /// The opening hours of the store.
+  /// The operating hours of the store.
   final String hours;
   /// A description of the store.
   final String description;
-  /// Optional map image URL, used when returning to the map.
+  /// An optional map image URL to be used when returning to the map.
   final String? mapImageUrl;
+  /// The store's website URL.
+  final String websiteUrl;
 
   const StoreDetailScreen({
     super.key,
@@ -28,12 +31,12 @@ class StoreDetailScreen extends StatelessWidget {
     required this.hours,
     required this.description,
     this.mapImageUrl,
+    required this.websiteUrl,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Set a light background colour for the screen.
       backgroundColor: const Color(0xFFFDF7FE),
       appBar: AppBar(
         backgroundColor: const Color(0xFFFDF7FE),
@@ -41,7 +44,6 @@ class StoreDetailScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.black),
         elevation: 0,
         centerTitle: true,
-        // The app bar title is set to 'Store' (could be updated to include the store name if required).
         title: const Text(
           'Store',
           style: TextStyle(
@@ -51,19 +53,17 @@ class StoreDetailScreen extends StatelessWidget {
           ),
         ),
       ),
-      // The body is wrapped in a SingleChildScrollView to support scrolling on smaller devices.
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top container displaying basic store details.
+            // Top section with store details.
             Container(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               color: const Color(0xFFFDF7FE),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Circular icon representing the store's location.
                   Container(
                     width: 50,
                     height: 50,
@@ -71,14 +71,9 @@ class StoreDetailScreen extends StatelessWidget {
                       color: Color(0xFFF1ECF7),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.place,
-                      color: Color(0xFF1D2520),
-                      size: 24,
-                    ),
+                    child: const Icon(Icons.place, color: Color(0xFF1D2520), size: 24),
                   ),
                   const SizedBox(width: 12),
-                  // Column containing the store name (with distance) and its address.
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,7 +99,7 @@ class StoreDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
-            // Display the store image.
+            // Store image.
             Image.asset(
               imageUrl,
               width: double.infinity,
@@ -112,7 +107,7 @@ class StoreDetailScreen extends StatelessWidget {
               fit: BoxFit.cover,
             ),
             const SizedBox(height: 16),
-            // Display the store name prominently.
+            // Store name displayed prominently.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
@@ -125,7 +120,7 @@ class StoreDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            // Display the store's operating hours.
+            // Display operating hours.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
@@ -137,7 +132,7 @@ class StoreDetailScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            // Display the store description.
+            // Display store description.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
@@ -149,12 +144,44 @@ class StoreDetailScreen extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            // Website section: display the website as a clickable text link.
+            if (websiteUrl.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    const Text(
+                      'Visit Website: ',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                      ),
+                    ),
+                    Link(
+                      // Open the URL in a new browser tab.
+                      target: LinkTarget.blank,
+                      uri: Uri.parse(websiteUrl),
+                      builder: (context, followLink) => GestureDetector(
+                        onTap: followLink,
+                        child: Text(
+                          websiteUrl,
+                          style: const TextStyle(
+                            color: Colors.blue,
+                            decoration: TextDecoration.underline,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 32),
             // Button to return to the map screen, passing relevant data.
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  // Pop the current screen and return the selected tab, map image URL, and store name.
                   Navigator.of(context).pop({
                     'selectedTab': 0,
                     'mapImageUrl': mapImageUrl ?? imageUrl,

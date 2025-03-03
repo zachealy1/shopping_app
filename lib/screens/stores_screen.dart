@@ -7,7 +7,7 @@ import '../widgets/search_bar.dart';
 
 /// A screen that displays a list of stores fetched from Firestore.
 /// Stores are sorted by their distance from the user, and users may tap on a store
-/// to view its details on a separate screen.
+/// to view its details on a separate screen. The store data now includes a website URL.
 class StoresScreen extends StatefulWidget {
   /// Callback to notify when the user chooses to open the map, returning
   /// details such as the map image URL and the selected store name.
@@ -20,15 +20,15 @@ class StoresScreen extends StatefulWidget {
 }
 
 class _StoresScreenState extends State<StoresScreen> {
-  // User's latitude and longitude. These are initialised with defaults.
+  // User's latitude and longitude. These are initialised with fallback defaults.
   double _userLat = 0;
   double _userLon = 0;
 
   // List of stores fetched from Firestore.
   List<Map<String, dynamic>> _stores = [];
-  // List of stores filtered according to the user's search query.
+  // List of stores filtered based on the user's search query.
   List<Map<String, dynamic>> _filteredStores = [];
-  // Controller to handle text input for searching.
+  // Controller for managing the search text input.
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -44,16 +44,27 @@ class _StoresScreenState extends State<StoresScreen> {
 
   /// Fetches the list of stores from the Firestore collection 'stores'.
   /// Each document is expected to contain fields such as name, address, imageAsset,
-  /// mapImageAsset, hours, description, lat and lon.
+  /// mapImageAsset, hours, description, lat, lon and websiteUrl.
   Future<void> _fetchStores() async {
     try {
       QuerySnapshot snapshot =
       await FirebaseFirestore.instance.collection('stores').get();
 
-      // Convert each Firestore document into a Map.
-      List<Map<String, dynamic>> fetchedStores = snapshot.docs
-          .map((doc) => doc.data() as Map<String, dynamic>)
-          .toList();
+      // Convert each Firestore document into a Map<String, String>.
+      List<Map<String, dynamic>> fetchedStores = snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return {
+          'name': data['name']?.toString() ?? '',
+          'address': data['address']?.toString() ?? '',
+          'imageAsset': data['imageAsset']?.toString() ?? '',
+          'mapImageAsset': data['mapImageAsset']?.toString() ?? '',
+          'hours': data['hours']?.toString() ?? '',
+          'description': data['description']?.toString() ?? '',
+          'lat': data['lat']?.toString() ?? '',
+          'lon': data['lon']?.toString() ?? '',
+          'websiteUrl': data['websiteUrl']?.toString() ?? '',
+        };
+      }).toList();
 
       setState(() {
         _stores = fetchedStores;
@@ -61,12 +72,12 @@ class _StoresScreenState extends State<StoresScreen> {
       });
     } catch (e) {
       print("Error fetching stores: $e");
-      // Optionally, present an error message to the user.
+      // Optionally, you may show an error message to the user here.
     }
   }
 
   /// Obtains the user's current location using the Geolocator package.
-  /// Falls back to default coordinates if the location services are disabled or permission is denied.
+  /// Falls back to default coordinates if location services are disabled or permission is denied.
   Future<void> _getUserLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -153,7 +164,7 @@ class _StoresScreenState extends State<StoresScreen> {
 
   /// Handles the user tapping on a store.
   /// Calculates the distance to the store, then navigates to the [StoreDetailScreen]
-  /// passing relevant store data.
+  /// passing all relevant store data, including the website URL.
   void _onStoreTap(Map<String, dynamic> store) async {
     // Parse the latitude and longitude from the store data.
     final storeLat = double.tryParse(store['lat']?.toString() ?? '') ?? 0;
@@ -164,7 +175,8 @@ class _StoresScreenState extends State<StoresScreen> {
     final distanceStr = '${distanceKm.toStringAsFixed(2)} km';
     final mapImageUrl = store['mapImageAsset'] ?? '';
 
-    // Navigate to the StoreDetailScreen with the store information.
+    // Navigate to the StoreDetailScreen with the store information,
+    // including the new websiteUrl field.
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -176,6 +188,7 @@ class _StoresScreenState extends State<StoresScreen> {
           hours: store['hours'] ?? '',
           description: store['description'] ?? '',
           mapImageUrl: mapImageUrl,
+          websiteUrl: store['websiteUrl'] ?? '',
         ),
       ),
     );
@@ -200,7 +213,7 @@ class _StoresScreenState extends State<StoresScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // If user location is not available yet, show a loading spinner.
+    // If the user's location is not available yet, show a loading spinner.
     if (_userLat == 0 && _userLon == 0) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -230,8 +243,10 @@ class _StoresScreenState extends State<StoresScreen> {
             itemCount: sortedStores.length,
             itemBuilder: (context, index) {
               final store = sortedStores[index];
-              final storeLat = double.tryParse(store['lat']?.toString() ?? '') ?? 0;
-              final storeLon = double.tryParse(store['lon']?.toString() ?? '') ?? 0;
+              final storeLat =
+                  double.tryParse(store['lat']?.toString() ?? '') ?? 0;
+              final storeLon =
+                  double.tryParse(store['lon']?.toString() ?? '') ?? 0;
               final distanceKm =
               _calculateDistance(_userLat, _userLon, storeLat, storeLon);
               return GestureDetector(
