@@ -183,7 +183,7 @@ class _MapScreenState extends State<MapScreen> {
       final now = TimeOfDay.now();
       final nowMinutes = now.hour * 60 + now.minute;
       // If the store is within 60 minutes of closing (and it is not already closed), display an alert.
-      if (closingTimeMinutes - nowMinutes <= 540 && closingTimeMinutes - nowMinutes > 0) {
+      if (closingTimeMinutes - nowMinutes <= 60 && closingTimeMinutes - nowMinutes > 0) {
         _alertShown = true;
         showDialog(
           context: context,
