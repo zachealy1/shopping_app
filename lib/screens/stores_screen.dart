@@ -72,7 +72,6 @@ class _StoresScreenState extends State<StoresScreen> {
       });
     } catch (e) {
       print("Error fetching stores: $e");
-      // Optionally, you may show an error message to the user here.
     }
   }
 

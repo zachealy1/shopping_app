@@ -116,7 +116,6 @@ class _MapScreenState extends State<MapScreen> {
       if (itemsDoc.exists) {
         Map<String, dynamic>? itemsData = itemsDoc.data() as Map<String, dynamic>?;
         if (itemsData != null) {
-          // Use the 'itemLocations' field if present; otherwise, assume the document holds the locations directly.
           Map<String, dynamic> locationsMap = itemsData.containsKey('itemLocations')
               ? itemsData['itemLocations'] as Map<String, dynamic>
               : itemsData;
@@ -156,17 +155,6 @@ class _MapScreenState extends State<MapScreen> {
 
   /// Converts degrees to radians.
   double _deg2rad(double deg) => deg * (pi / 180);
-
-  /// Calculates the distance between two geographical points using the Haversine formula.
-  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const R = 6371; // Earth's radius in kilometres.
-    final dLat = _deg2rad(lat2 - lat1);
-    final dLon = _deg2rad(lon2 - lon1);
-    final a = sin(dLat / 2) * sin(dLat / 2) +
-        cos(_deg2rad(lat1)) * cos(_deg2rad(lat2)) * sin(dLon / 2) * sin(dLon / 2);
-    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return R * c;
-  }
 
   /// Checks if the store is close to its closing time and shows an alert if so.
   /// Considers different closing times for Sundays and weekdays.
