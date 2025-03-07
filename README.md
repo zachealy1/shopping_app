@@ -26,7 +26,7 @@ ShopIt is a cross-platform Flutter application that allows users to browse store
 
 1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/yourusername/shopit.git
+   git clone git@github.com:zachealy1/shopping_app.git
    cd shopit
     ```
 
@@ -39,4 +39,3 @@ ShopIt is a cross-platform Flutter application that allows users to browse store
    ```bash
    flutter run
     ```
-
