@@ -1,42 +1,55 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'list_details_screen.dart';
 import '../widgets/search_bar.dart';
 
 /// A screen that displays a list of shopping lists and allows the user to search,
-/// add, delete and select a specific shopping list.
+/// add, delete and select a specific shopping list. The user's lists are persisted
+/// locally using SharedPreferences.
 class ListScreen extends StatefulWidget {
-  /// The initial list of shopping list names.
-  final List<String> shoppingLists;
-
-  const ListScreen({
-    super.key,
-    required this.shoppingLists,
-  });
+  const ListScreen({super.key});
 
   @override
-  State<ListScreen> createState() => _ListScreenState();
+  ListScreenState createState() => ListScreenState();
 }
 
-class _ListScreenState extends State<ListScreen> {
-  // Local copy of shopping list names.
-  late List<String> _shoppingLists;
+class ListScreenState extends State<ListScreen> {
+  // List of shopping list names.
+  List<String> _shoppingLists = [];
   // List of shopping lists filtered by the search query.
-  late List<String> _filteredLists;
+  List<String> _filteredLists = [];
   // Controller to manage the search field text.
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // Initialise local list variables with the provided shopping lists.
-    _shoppingLists = widget.shoppingLists;
-    _filteredLists = _shoppingLists;
-    // Add a listener to handle search queries.
+    _loadLists();
     _searchController.addListener(_onSearchChanged);
   }
 
+  /// Loads the shopping lists from SharedPreferences using the key 'shoppingLists'.
+  Future<void> _loadLists() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? savedLists = prefs.getString('shoppingLists');
+    setState(() {
+      if (savedLists != null) {
+        _shoppingLists = List<String>.from(jsonDecode(savedLists));
+      } else {
+        _shoppingLists = [];
+      }
+      _filteredLists = _shoppingLists;
+    });
+  }
+
+  /// Saves the current shopping lists to SharedPreferences.
+  Future<void> _saveLists() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('shoppingLists', jsonEncode(_shoppingLists));
+  }
+
   /// Called whenever the search text changes.
-  /// Filters the shopping lists to include only those containing the query.
   void _onSearchChanged() {
     setState(() {
       final query = _searchController.text.toLowerCase();
@@ -53,15 +66,16 @@ class _ListScreenState extends State<ListScreen> {
       // Reset filtered list to include the new item.
       _filteredLists = _shoppingLists;
     });
+    _saveLists();
   }
 
-  /// Deletes a shopping list from the collection at the specified index.
+  /// Deletes a shopping list at the given index.
   void _deleteList(int index) {
     setState(() {
       _shoppingLists.removeAt(index);
-      // Update the filtered list to reflect deletion.
       _filteredLists = _shoppingLists;
     });
+    _saveLists();
   }
 
   /// Navigates to the list details screen for the selected shopping list.
@@ -74,9 +88,67 @@ class _ListScreenState extends State<ListScreen> {
     );
   }
 
+  /// Displays a dialog to add a new shopping list.
+  void showAddListDialog() {
+    final TextEditingController listController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Add New List"),
+          content: TextField(
+            controller: listController,
+            decoration: const InputDecoration(hintText: "Enter list name"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6A4CAF),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                String newListName = listController.text.trim();
+                if (newListName.isNotEmpty) {
+                  bool exists = _shoppingLists.any(
+                        (list) => list.toLowerCase() == newListName.toLowerCase(),
+                  );
+                  if (exists) {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text("Error"),
+                          content: const Text("A list with this name already exists."),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("OK"),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  } else {
+                    addList(newListName);
+                    Navigator.pop(context);
+                  }
+                }
+              },
+              child: const Text("Add"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
-    // Remove the search listener and dispose of the controller.
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
@@ -84,9 +156,10 @@ class _ListScreenState extends State<ListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Return only the content so that the header from main.dart is the only header.
     return Column(
       children: [
-        // Search bar widget at the top of the screen.
+        // Search bar widget.
         SearchBarWidget(
           controller: _searchController,
           onSearchChanged: _onSearchChanged,
@@ -101,9 +174,7 @@ class _ListScreenState extends State<ListScreen> {
             ),
             itemBuilder: (context, index) {
               return Dismissible(
-                // Unique key for each dismissible item.
                 key: Key(_filteredLists[index]),
-                // Allow swipe-to-delete from right to left.
                 direction: DismissDirection.endToStart,
                 background: Container(
                   alignment: Alignment.centerRight,
@@ -114,14 +185,11 @@ class _ListScreenState extends State<ListScreen> {
                   ),
                 ),
                 onDismissed: (direction) {
-                  // Find the original index in the full shopping list.
-                  int originalIndex =
-                  _shoppingLists.indexOf(_filteredLists[index]);
+                  int originalIndex = _shoppingLists.indexOf(_filteredLists[index]);
                   if (originalIndex != -1) {
                     _deleteList(originalIndex);
                   }
                 },
-                // GestureDetector to handle taps on a list item.
                 child: GestureDetector(
                   onTap: () => _onListTap(_filteredLists[index]),
                   child: Container(
@@ -131,7 +199,6 @@ class _ListScreenState extends State<ListScreen> {
                       children: [
                         const Icon(Icons.list, color: Colors.black, size: 24),
                         const SizedBox(width: 12),
-                        // Display the list name.
                         Expanded(
                           child: Text(
                             _filteredLists[index],
@@ -142,7 +209,6 @@ class _ListScreenState extends State<ListScreen> {
                             ),
                           ),
                         ),
-                        // Arrow icon to indicate that the item is tappable.
                         const Icon(Icons.arrow_forward_ios,
                             color: Colors.black54, size: 18),
                       ],
